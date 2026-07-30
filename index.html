@@ -27,6 +27,48 @@
 </header>
 
 <div class="container">
+<div class="layout-wrapper">
+<aside class="sidebar-left">
+
+  <div class="card" id="analysisInputCard">
+    <div class="card-header">
+      🧪 Данные для анализа
+      <span class="badge">необязательно</span>
+    </div>
+    <div class="card-body">
+      <div class="analysis-note">
+        Дополнительные лабораторные показатели. Заполните вручную или подтяните из ЭМК.
+      </div>
+      <div class="input-grid">
+        <div class="input-group">
+          <label>КФК общая <span class="unit">Ед/л</span></label>
+          <input type="text" id="ck_total" placeholder="250">
+        </div>
+        <div class="input-group">
+          <label>КФК-МВ <span class="unit">Ед/л</span></label>
+          <input type="text" id="ck_mb" placeholder="38">
+        </div>
+        <div class="input-group">
+          <label>Натрий (Na) <span class="unit">ммоль/л</span></label>
+          <input type="text" id="na_measured" placeholder="135">
+        </div>
+        <div class="input-group">
+          <label>Глюкоза <span class="unit">ммоль/л</span></label>
+          <input type="text" id="glucose" placeholder="5.5">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="analysisPanel" style="display:none;">
+    <div class="card-header">🧠 Анализ</div>
+    <div class="card-body">
+      <div id="analysisModules"></div>
+    </div>
+  </div>
+
+</aside>
+<main class="main-content">
 
   <!-- ===== ВЫБОР ШКАЛ ===== -->
   <div class="card">
@@ -913,6 +955,8 @@
 
   <!-- Ошибки -->
 
+</main>
+</div><!-- /layout-wrapper -->
 </div><!-- /container -->
 
 <!-- ===== ДИСКЛЕЙМЕР — БАННЕР ВНИЗУ СТРАНИЦЫ ===== -->
@@ -973,7 +1017,5 @@
   </div>
 </div>
 <script src="script.js"></script>
-</body>
-</html>
 </body>
 </html>

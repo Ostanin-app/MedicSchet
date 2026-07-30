@@ -14,7 +14,8 @@ function saveUndoState() {
   // Числовые/текстовые поля
   var inputIds = [
     'age','height','weight','sbp','hr','creatinine','hb','hct','plt',
-    'pesi_rr','pesi_temp','pesi_spo2','emrPaste'
+    'pesi_rr','pesi_temp','pesi_spo2','emrPaste','ck_total','ck_mb',
+    'na_measured','glucose'
   ];
   inputIds.forEach(function(id) {
     var el = document.getElementById(id);
@@ -108,7 +109,8 @@ function performUndo() {
   // Восстанавливаем числовые/текстовые поля
   var inputIds = [
     'age','height','weight','sbp','hr','creatinine','hb','hct','plt',
-    'pesi_rr','pesi_temp','pesi_spo2','emrPaste'
+    'pesi_rr','pesi_temp','pesi_spo2','emrPaste','ck_total','ck_mb',
+    'na_measured','glucose'
   ];
   inputIds.forEach(function(id) {
     var el = document.getElementById(id);
@@ -179,6 +181,7 @@ function performUndo() {
   // Запускаем autofill (внутри он сам не даст записать в историю)
   autofill();
   updateFieldVisibility();
+  updateAnalysisPanel();
 
   // Сначала обновляем кнопку, только потом снимаем блокировку записи
   updateUndoButton();
@@ -227,7 +230,8 @@ function initUndoTracking() {
   // Поля ввода — debounce 800 мс
   var inputFields = [
     'age','height','weight','sbp','hr','creatinine','hb','hct','plt',
-    'pesi_rr','pesi_temp','pesi_spo2','emrPaste'
+    'pesi_rr','pesi_temp','pesi_spo2','emrPaste','ck_total','ck_mb',
+    'na_measured','glucose'
   ];
   inputFields.forEach(function(id) {
     var el = document.getElementById(id);
@@ -354,7 +358,7 @@ if (document.readyState === 'loading') {
 // ===================================================
 function resetAllFields() {
   // Сброс всех input-полей
-  var inputIds = ['age','height','weight','sbp','hr','creatinine','hb','hct','plt','pesi_rr','pesi_temp','pesi_spo2'];
+  var inputIds = ['age','height','weight','sbp','hr','creatinine','hb','hct','plt','pesi_rr','pesi_temp','pesi_spo2','ck_total','ck_mb','na_measured','glucose'];
   inputIds.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.value = '';
@@ -413,6 +417,9 @@ function resetAllFields() {
   
   // Скрываем результаты
   document.getElementById('results').style.display = 'none';
+
+  // Обновляем боковой блок анализа после программного сброса полей КФК
+  updateAnalysisPanel();
 }
 
 function fillDemo(scenario) {
@@ -449,6 +456,8 @@ function fillDemo(scenario) {
     document.getElementById('grace_killip').value = 2;
     document.getElementById('grace_st').checked = true;
     document.getElementById('grace_enzymes').checked = true;
+    document.getElementById('ck_total').value = 850;
+    document.getElementById('ck_mb').value = 68;
     
     // Включаем группу ОКС
     toggleGroup('acs');
@@ -521,6 +530,7 @@ function fillDemo(scenario) {
   
   // Запускаем автозаполнение (авто-чекалки шкал)
   autofill();
+  updateAnalysisPanel();
   
   skipUndo = false;
 
@@ -579,7 +589,7 @@ let tooltipTimeout = null;
 
 function showTooltip(text, x, y) {
   if (!tooltip) return;
-  tooltip.textContent = text;
+  tooltip.innerText = text;
   tooltip.style.display = 'block';
   tooltip.style.left = (x + 12) + 'px';
   tooltip.style.top = (y + 12) + 'px';
@@ -1640,7 +1650,11 @@ const OCR_INDICATORS = [
   // ЧДД
   { keys: ['чд', 'чдд', 'частота дыханий', 'чдд (в мин)'], field: 'pesi_rr', unitExpected: 'в мин' },
   // сатурация
-  { keys: ['сатурация', 'spo2', 'spo₂', 'сатурация (%)'], field: 'pesi_spo2', unitExpected: '%' }
+  { keys: ['сатурация', 'spo2', 'spo₂', 'сатурация (%)'], field: 'pesi_spo2', unitExpected: '%' },
+  // натрий
+  { keys: ['натрий', 'na', 'sodium', 'натрий (ммоль/л)'], field: 'na_measured', unitExpected: 'ммоль/л' },
+  // глюкоза
+  { keys: ['глюкоза', 'glucose', 'глюкоза (ммоль/л)'], field: 'glucose', unitExpected: 'ммоль/л' }
 ];
 
 function parseEMRText(text) {
@@ -2418,11 +2432,22 @@ function copyToClipboard() {
 });
 
 // Init on load
+var ckTotalOnStart = document.getElementById('ck_total');
+var ckMbOnStart = document.getElementById('ck_mb');
+var naMeasuredOnStart = document.getElementById('na_measured');
+var glucoseOnStart = document.getElementById('glucose');
+
+if (ckTotalOnStart) ckTotalOnStart.value = '';
+if (ckMbOnStart) ckMbOnStart.value = '';
+if (naMeasuredOnStart) naMeasuredOnStart.value = '';
+if (glucoseOnStart) glucoseOnStart.value = '';
+
 autofill();
 updateFieldVisibility();
 updateGroupButtonsUI();
 initSexToggle();
 syncSexFromHidden();
+updateAnalysisPanel();
 
   // ===================================================
   //  УПРАВЛЕНИЕ ВИДИМОСТЬЮ КНОПОК "ВВЕРХ" / "ВНИЗ"
@@ -2591,3 +2616,143 @@ if (document.readyState === 'loading') {
 } else {
   checkDisclaimer();
 }
+
+// ===================================================
+//  АНАЛИЗ: Коррекция натрия при гипергликемии
+// ===================================================
+function renderSodiumCorrectionModule() {
+  var na = parseNum('na_measured');
+  var glu = parseNum('glucose');
+
+  if (na === null || glu === null) return null;
+
+  if (na <= 0 || glu <= 0) {
+    return makeResultCard('Скорректированный натрий', 'Ошибка данных',
+      'Значения должны быть больше 0', 'moderate',
+      'Проверьте корректность введённых натрия и глюкозы.', '');
+  }
+
+  // Если глюкоза в норме — коррекция не нужна
+  if (glu <= 5.55) {
+    return makeResultCard('Скорректированный натрий', na.toFixed(0) + ' ммоль/л',
+      'Коррекция не требуется', 'low',
+      'Уровень глюкозы в норме (≤5,6 ммоль/л). Измеренный натрий является истинным.', '');
+  }
+
+  // Формула Каца (1973), коэффициент 1,6
+  var katz = na + 1.6 * ((glu - 5.55) / 5.55);
+  // Формула Хиллиера (1999), коэффициент 2,4
+  var hillier = na + 2.4 * ((glu - 5.55) / 5.55);
+
+  // Интерпретация по скорректированному натрию (Кац)
+  var risk = 'low';
+  var interp = 'Псевдогипонатриемия';
+  var detailsExtra = 'Истинный уровень натрия в норме после поправки на глюкозу.';
+
+  if (katz < 135) {
+    risk = 'high';
+    interp = 'Истинная гипонатриемия';
+    detailsExtra = 'У пациента реальный дефицит натрия, требующий внимания.';
+  } else if (katz > 145) {
+    risk = 'veryhigh';
+    interp = 'Истинная гипернатриемия';
+    detailsExtra = 'Высокая концентрация натрия даже с поправкой на глюкозу.';
+  }
+
+  var tooltipText = 'Измеренный Na: ' + na.toFixed(1) + ' ммоль/л\n' +
+    'Глюкоза: ' + glu.toFixed(1) + ' ммоль/л\n\n' +
+    'Хиллиер (коэф. 2,4): ' + hillier.toFixed(1) + ' ммоль/л\n' +
+    'Кац (коэф. 1,6): ' + katz.toFixed(1) + ' ммоль/л\n\n' +
+    'Хиллиер (1999) — точнее при выраженной гипергликемии (>22 ммоль/л).\n' +
+    'Кац (1973) — классическая формула.';
+
+  var tooltipId = 'na_correction_tooltip_' + Date.now();
+
+  var details =
+    '<span style="font-size:12px;color:#555;">' + detailsExtra + '</span>';
+
+  var valueWithIcon = hillier.toFixed(1) + ' / ' + katz.toFixed(1) + ' ммоль/л ' +
+    '<span class="info-icon" id="' + tooltipId + '" style="cursor:help;font-size:20px;opacity:0.6;vertical-align:middle;">ⓘ</span>';
+
+  var html = makeResultCard('Скорректированный натрий', valueWithIcon,
+    interp, risk, details, '');
+
+  // Подключаем тултип после того, как карточка появится в DOM
+  setTimeout(function() {
+    var icon = document.getElementById(tooltipId);
+    if (icon) setupTooltipTrigger(icon, tooltipText);
+  }, 50);
+
+  return html;
+}
+
+// ===================================================
+//  АНАЛИЗ: Индекс КФК-МВ
+// ===================================================
+function renderCKMBIndexModule() {
+  var ckTotal = parseNum('ck_total');
+  var ckMb = parseNum('ck_mb');
+  if (ckTotal === null || ckMb === null) return null;
+  if (ckTotal <= 0 || ckMb < 0) {
+    return makeResultCard('Индекс КФК-МВ','Ошибка данных',
+      'Проверьте корректность значений','moderate',
+      'КФК общая должна быть больше 0.','');
+  }
+  if (ckMb > ckTotal) {
+    return makeResultCard('Индекс КФК-МВ','Ошибка данных',
+      'КФК-МВ не может превышать общую КФК','moderate',
+      'Проверьте значения.','');
+  }
+  var ri = (ckMb / ckTotal) * 100;
+  var riFormatted = ri.toFixed(1).replace('.', ',');
+  var risk = 'moderate';
+  var interp = 'Пограничный результат';
+  var detailsExtra = 'Требуется дополнительная клиническая оценка.';
+  if (ri < 3.0) {
+    risk = 'low';
+    interp = 'Кардиальный источник маловероятен';
+    detailsExtra = 'Повышение КФК-МВ, скорее всего, связано с внесердечным источником.';
+  } else if (ri > 5.0) {
+    risk = 'neutral';
+    interp = 'Кардиальный источник более вероятен';
+    detailsExtra = 'Соотношение типично для кардиального происхождения ферментов.';
+  }
+  var details = 'КФК-МВ ' + ckMb.toFixed(1) + ' / КФК ' + ckTotal.toFixed(1) +
+    ' × 100 = ' + riFormatted + '%<br>' + detailsExtra;
+  var hint = 'Индекс не входит в современные диагностические критерии ИМ. ' +
+    'Интерпретировать с учётом клиники, ЭКГ и тропонина.';
+  return makeResultCard('Индекс КФК-МВ', riFormatted + '%', interp, risk, details, hint);
+}
+
+function updateAnalysisPanel() {
+  var panel = document.getElementById('analysisPanel');
+  var modulesContainer = document.getElementById('analysisModules');
+  if (!panel || !modulesContainer) return;
+  var modules = [];
+  var ckmbModule = renderCKMBIndexModule();
+  if (ckmbModule) modules.push(ckmbModule);
+
+  var naModule = renderSodiumCorrectionModule();
+  if (naModule) modules.push(naModule);
+
+  if (modules.length === 0) {
+    modulesContainer.innerHTML = '';
+    panel.style.display = 'none';
+    return;
+  }
+  modulesContainer.innerHTML = modules.join('');
+  panel.style.display = 'block';
+}
+
+// Обновляем анализ при вводе КФК
+document.addEventListener('DOMContentLoaded', function() {
+  var ckTotal = document.getElementById('ck_total');
+  var ckMb = document.getElementById('ck_mb');
+  if (ckTotal) ckTotal.addEventListener('input', updateAnalysisPanel);
+  if (ckMb) ckMb.addEventListener('input', updateAnalysisPanel);
+
+  var naMeasured = document.getElementById('na_measured');
+  var glucoseInput = document.getElementById('glucose');
+  if (naMeasured) naMeasured.addEventListener('input', updateAnalysisPanel);
+  if (glucoseInput) glucoseInput.addEventListener('input', updateAnalysisPanel);
+});

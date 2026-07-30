@@ -1277,3 +1277,112 @@ body.dark-theme .disclaimer-modal .disclaimer-accept-btn { background: linear-gr
 .support-block .support-link-btn { display: inline-block; padding: 10px 22px; background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.25); border-radius: 8px; color: white; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.2s; }
 .support-block .support-link-btn:hover { background: rgba(255,255,255,0.22); border-color: rgba(255,255,255,0.4); transform: translateY(-1px); }
 @media (max-width: 500px) { .support-block .support-qr-area { flex-direction: column; align-items: center; text-align: center; } .support-block .support-qr-img { width: 160px; height: 160px; } }
+
+/* ===== БОКОВОЙ БЛОК АНАЛИЗА ===== */
+
+.layout-wrapper {
+  position: relative;
+}
+
+.main-content {
+  width: 100%;
+  min-width: 0;
+}
+
+.sidebar-left {
+  width: 100%;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+}
+
+.analysis-note {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+#analysisModules {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ------------------------------------------
+   РЕЖИМ C: экран < 1520 px
+   Блок внутри основной колонки, обычный поток.
+   Ничего особого не нужно — работают стили выше.
+   ------------------------------------------ */
+
+/* ------------------------------------------
+   РЕЖИМ B: экран 1520–1879 px
+   Блок слева, фиксирован, ширина РЕЗИНОВАЯ.
+   ------------------------------------------ */
+@media (min-width: 1520px) {
+  .sidebar-left {
+    position: fixed;
+    top: 90px;
+    width: calc((100vw - 960px) / 2 - 40px);
+    min-width: 260px;
+    max-width: 440px;
+    right: calc(50% + 500px);
+    margin-bottom: 0;
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+  }
+
+  .sidebar-left .input-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .sidebar-left .input-group input {
+    padding: 6px 8px;
+    font-size: 13px;
+  }
+
+  .sidebar-left .input-group label {
+    font-size: 11px;
+  }
+}
+
+/* ------------------------------------------
+   РЕЖИМ A: экран >= 1880 px
+   Блок слева, фиксирован, ширина 440, поля в 2 колонки.
+   ------------------------------------------ */
+@media (min-width: 1880px) {
+  .sidebar-left {
+    width: 440px;
+  }
+
+  .sidebar-left .input-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+/* ------------------------------------------
+   Скроллбар внутри бокового блока (тонкий)
+   ------------------------------------------ */
+.sidebar-left::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-left::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15);
+  border-radius: 4px;
+}
+body.dark-theme .sidebar-left::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+}
+
+/* ------------------------------------------
+   Тёмная тема для бокового блока
+   ------------------------------------------ */
+body.dark-theme .sidebar-left .card {
+  background: #161b22;
+  border: 1px solid #21262d;
+}
+body.dark-theme .analysis-note {
+  color: #6e7681;
+}
