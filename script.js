@@ -15,7 +15,7 @@ function saveUndoState() {
   var inputIds = [
     'age','height','weight','sbp','hr','creatinine','hb','hct','plt',
     'pesi_rr','pesi_temp','pesi_spo2','emrPaste','ck_total','ck_mb',
-    'na_measured','glucose'
+    'na_measured','glucose','potassium','magnesium'
   ];
   inputIds.forEach(function(id) {
     var el = document.getElementById(id);
@@ -110,7 +110,7 @@ function performUndo() {
   var inputIds = [
     'age','height','weight','sbp','hr','creatinine','hb','hct','plt',
     'pesi_rr','pesi_temp','pesi_spo2','emrPaste','ck_total','ck_mb',
-    'na_measured','glucose'
+    'na_measured','glucose','potassium','magnesium'
   ];
   inputIds.forEach(function(id) {
     var el = document.getElementById(id);
@@ -231,7 +231,7 @@ function initUndoTracking() {
   var inputFields = [
     'age','height','weight','sbp','hr','creatinine','hb','hct','plt',
     'pesi_rr','pesi_temp','pesi_spo2','emrPaste','ck_total','ck_mb',
-    'na_measured','glucose'
+    'na_measured','glucose','potassium','magnesium'
   ];
   inputFields.forEach(function(id) {
     var el = document.getElementById(id);
@@ -358,7 +358,7 @@ if (document.readyState === 'loading') {
 // ===================================================
 function resetAllFields() {
   // Сброс всех input-полей
-  var inputIds = ['age','height','weight','sbp','hr','creatinine','hb','hct','plt','pesi_rr','pesi_temp','pesi_spo2','ck_total','ck_mb','na_measured','glucose'];
+  var inputIds = ['age','height','weight','sbp','hr','creatinine','hb','hct','plt','pesi_rr','pesi_temp','pesi_spo2','ck_total','ck_mb','na_measured','glucose','potassium','magnesium'];
   inputIds.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.value = '';
@@ -589,10 +589,41 @@ let tooltipTimeout = null;
 
 function showTooltip(text, x, y) {
   if (!tooltip) return;
+
   tooltip.innerText = text;
   tooltip.style.display = 'block';
-  tooltip.style.left = (x + 12) + 'px';
-  tooltip.style.top = (y + 12) + 'px';
+  tooltip.style.opacity = '0';
+
+  var offset = 12;
+  var screenPadding = 12;
+
+  // Сначала ставим тултип в обычную позицию
+  var left = x + offset;
+  var top = y + offset;
+
+  // Даем браузеру посчитать реальные размеры тултипа
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+
+  var rect = tooltip.getBoundingClientRect();
+
+  // Если не хватает места справа — сдвигаем влево
+  if (left + rect.width > window.innerWidth - screenPadding) {
+    left = window.innerWidth - rect.width - screenPadding;
+  }
+
+  // Если не хватает места снизу — показываем выше курсора
+  if (top + rect.height > window.innerHeight - screenPadding) {
+    top = y - rect.height - offset;
+  }
+
+  // Защита от ухода за левый и верхний край
+  if (left < screenPadding) left = screenPadding;
+  if (top < screenPadding) top = screenPadding;
+
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+
   setTimeout(() => { tooltip.style.opacity = '1'; }, 10);
 }
 
@@ -1654,7 +1685,11 @@ const OCR_INDICATORS = [
   // натрий
   { keys: ['натрий', 'na', 'sodium', 'натрий (ммоль/л)'], field: 'na_measured', unitExpected: 'ммоль/л' },
   // глюкоза
-  { keys: ['глюкоза', 'glucose', 'глюкоза (ммоль/л)'], field: 'glucose', unitExpected: 'ммоль/л' }
+  { keys: ['глюкоза', 'glucose', 'глюкоза (ммоль/л)'], field: 'glucose', unitExpected: 'ммоль/л' },
+  // калий
+  { keys: ['калий', 'k', 'potassium', 'калий (ммоль/л)', 'k+'], field: 'potassium', unitExpected: 'ммоль/л' },
+  // магний
+  { keys: ['магний', 'mg', 'magnesium', 'магний (ммоль/л)', 'mg2+'], field: 'magnesium', unitExpected: 'ммоль/л' }
 ];
 
 function parseEMRText(text) {
@@ -2421,6 +2456,7 @@ function copyToClipboard() {
   if (el) {
     el.addEventListener('change', function() {
       autofill();
+      updateAnalysisPanel();
     });
   }
 });
@@ -2428,6 +2464,7 @@ function copyToClipboard() {
 ['age','sex','sbp','hb','plt','weight','height','creatinine'].forEach(function(id) {
   document.getElementById(id).addEventListener('input', function() {
     autofill();
+    updateAnalysisPanel();
   });
 });
 
@@ -2436,11 +2473,15 @@ var ckTotalOnStart = document.getElementById('ck_total');
 var ckMbOnStart = document.getElementById('ck_mb');
 var naMeasuredOnStart = document.getElementById('na_measured');
 var glucoseOnStart = document.getElementById('glucose');
+var potassiumOnStart = document.getElementById('potassium');
+var magnesiumOnStart = document.getElementById('magnesium');
 
 if (ckTotalOnStart) ckTotalOnStart.value = '';
 if (ckMbOnStart) ckMbOnStart.value = '';
 if (naMeasuredOnStart) naMeasuredOnStart.value = '';
 if (glucoseOnStart) glucoseOnStart.value = '';
+if (potassiumOnStart) potassiumOnStart.value = '';
+if (magnesiumOnStart) magnesiumOnStart.value = '';
 
 autofill();
 updateFieldVisibility();
@@ -2618,6 +2659,313 @@ if (document.readyState === 'loading') {
 }
 
 // ===================================================
+//  АНАЛИЗ: Калий — дефицит, инфузия, гиперкалиемия
+// ===================================================
+function renderPotassiumModule() {
+  var k = parseNum('potassium');
+  if (k === null) return null;
+
+  if (k <= 0) {
+    return makeResultCard('Калий', 'Ошибка данных',
+      'Значение должно быть больше 0', 'moderate',
+      'Проверьте корректность введённого значения калия.', '');
+  }
+
+  var mg = parseNum('magnesium');
+  var weight = parseNum('weight');
+  var plt = parseNum('plt');
+  var hasDM = cb('cb_dm');
+
+  // ===== НОРМА =====
+  if (k >= 3.5 && k <= 5.0) {
+    return makeResultCard('Калий', k.toFixed(1) + ' ммоль/л',
+      'Калий в пределах нормы', 'low',
+      'Коррекция обычно не требуется.', '');
+  }
+
+  // ===== ГИПОКАЛИЕМИЯ =====
+  if (k < 3.5) {
+    // Степень
+    var hypoGrade = '';
+    var hypoRisk = 'moderate';
+    if (k >= 3.0) {
+      hypoGrade = 'Лёгкая гипокалиемия';
+      hypoRisk = 'moderate';
+    } else if (k >= 2.5) {
+      hypoGrade = 'Средняя гипокалиемия';
+      hypoRisk = 'high';
+    } else if (k >= 2.0) {
+      hypoGrade = 'Тяжёлая гипокалиемия';
+      hypoRisk = 'veryhigh';
+    } else {
+      hypoGrade = 'Критическая гипокалиемия';
+      hypoRisk = 'veryhigh';
+    }
+
+    // Эмпирический дефицит (общий, включая внутриклеточный)
+    var empiricalDeficit = '';
+    if (k >= 3.0) empiricalDeficit = '~200 ммоль';
+    else if (k >= 2.5) empiricalDeficit = '200–400 ммоль';
+    else if (k >= 2.0) empiricalDeficit = '400–600 ммоль';
+    else empiricalDeficit = '600–800+ ммоль';
+
+    // Расчётный дефицит по формуле AHA (внеклеточный)
+    var formulaDeficit = null;
+    if (weight !== null && weight > 0) {
+      formulaDeficit = (4.0 - k) * weight * 0.4;
+      formulaDeficit = Math.round(formulaDeficit);
+    }
+
+    // Максимальная суточная доза в/в
+    var maxDaily = '';
+    if (weight !== null && weight > 0) {
+      var maxDailyLow = Math.round(weight * 2);
+      var maxDailyHigh = Math.round(weight * 3);
+      maxDaily = maxDailyLow + '–' + maxDailyHigh + ' ммоль/сут';
+    }
+
+    // Правило разведения для периферической вены
+    var dilutionLine = '';
+    var dilutionHint = '';
+    if (k < 2.5) {
+      dilutionLine = 'Разведение (периферия): <strong>≤40 ммоль/л</strong>';
+      dilutionHint = '(не более 20 ммоль KCl на 500 мл NaCl 0,9%)';
+    } else {
+      dilutionLine = 'Разведение (периферия): <strong>≤20 ммоль/л</strong>';
+      dilutionHint = '(не более 10 ммоль KCl на 500 мл NaCl 0,9%)';
+    }
+
+    // Скорость введения
+    var speedLine = '';
+    if (k < 2.0) {
+      speedLine = 'Скорость введения: до <strong>40 ммоль/ч</strong> (ЦВК, кардиомониторинг обязателен)';
+    } else {
+      speedLine = 'Скорость введения: до <strong>20 ммоль/ч</strong>' + (k < 2.5 ? ' (кардиомониторинг обязателен)' : '');
+    }
+
+    // ===== БЛОК 1: Экстренная в/в коррекция =====
+    var ivBlock = '';
+    if (formulaDeficit !== null && formulaDeficit > 0) {
+      var kcl4ml = (formulaDeficit / 0.54).toFixed(0);
+      var kcl75ml = (formulaDeficit / 1.0).toFixed(0);
+      var kcl10ml = (formulaDeficit / 1.34).toFixed(0);
+
+      ivBlock =
+        '<div style="margin-top:6px;padding:8px 10px;background:#f0f7ff;border-left:3px solid #2980b9;border-radius:0 6px 6px 0;font-size:12px;line-height:1.6;">' +
+          '<div style="font-weight:700;margin-bottom:4px;">💉 Экстренная в/в коррекция</div>' +
+          '<div>Внеклеточный дефицит: <strong>~' + formulaDeficit + ' ммоль</strong></div>' +
+          '<div style="margin-top:4px;">KCl 4%: <strong>' + kcl4ml + ' мл</strong> · 7,5%: <strong>' + kcl75ml + ' мл</strong> · 10%: <strong>' + kcl10ml + ' мл</strong></div>' +
+          '<div style="margin-top:4px;">' + dilutionLine + '</div>' +
+          '<div style="color:#555;">' + dilutionHint + '</div>' +
+          '<div style="color:#555;">Через ЦВК допустима концентрация до <strong>60–120 ммоль/л</strong></div>' +
+          '<div style="margin-top:4px;">' + speedLine + '</div>' +
+          (maxDaily ? '<div>Макс. в/в суточная доза: <strong>' + maxDaily + '</strong></div>' : '') +
+          '<div style="margin-top:4px;color:#555;">Контроль K⁺ через 2–4 ч после инфузии</div>' +
+        '</div>';
+    } else {
+      ivBlock =
+        '<div style="margin-top:6px;padding:8px 10px;background:#f0f7ff;border-left:3px solid #2980b9;border-radius:0 6px 6px 0;font-size:12px;line-height:1.6;">' +
+          '<div style="font-weight:700;margin-bottom:4px;">💉 Экстренная в/в коррекция</div>' +
+          '<div><em>Введите вес пациента для расчёта дозы</em></div>' +
+          '<div style="margin-top:4px;">' + dilutionLine + '</div>' +
+          '<div style="color:#555;">' + dilutionHint + '</div>' +
+          '<div style="color:#555;">Через ЦВК допустима концентрация до <strong>60–120 ммоль/л</strong></div>' +
+          '<div style="margin-top:4px;">' + speedLine + '</div>' +
+        '</div>';
+    }
+
+    // ===== БЛОК 2: Общий дефицит =====
+    var totalBlock =
+      '<div style="margin-top:6px;padding:8px 10px;background:#f7f9fc;border-left:3px solid #8e44ad;border-radius:0 6px 6px 0;font-size:12px;line-height:1.6;">' +
+        '<div style="font-weight:700;margin-bottom:4px;">💊 Общий дефицит (восполнение за 3–5 дней)</div>' +
+        '<div>Ориентировочный общий дефицит: <strong>' + empiricalDeficit + '</strong></div>' +
+        '<div>После стабилизации K⁺ ≥ 3,5 — перевод на пероральный приём</div>' +
+        '<div>Пероральная доза: <strong>40–60 ммоль/сут</strong> (в 3–4 приёма)</div>' +
+      '</div>';
+
+    // ===== Предупреждения =====
+    var warnings = [];
+
+    if (k < 3.5 && mg === null) {
+      warnings.push('🔍 Проверьте уровень магния. Гипомагниемия — частая причина рефрактерной гипокалиемии.');
+    } else if (k < 3.5 && mg !== null && mg < 0.7) {
+      warnings.push('⚠️ Гипомагниемия (Mg ' + mg.toFixed(2) + ' ммоль/л). Коррекция калия может быть неэффективна без коррекции магния.');
+    }
+
+    if (k < 2.5) {
+      warnings.push('⚠️ Мониторинг ЭКГ обязателен. Риск жизнеугрожающих аритмий.');
+    }
+
+    if (hasDM) {
+      warnings.push('💉 СД: при коррекции кетоацидоза и на фоне инсулинотерапии потребность в калии может увеличиваться.');
+    }
+
+    var warningsHtml = '';
+    if (warnings.length > 0) {
+      warningsHtml = '<div style="margin-top:6px;font-size:12px;line-height:1.6;padding:8px 10px;background:#fffbf0;border-left:3px solid #e67e22;border-radius:0 6px 6px 0;">';
+      warnings.forEach(function(w) {
+        warningsHtml += '<div style="margin-bottom:4px;">' + w + '</div>';
+      });
+      warningsHtml += '</div>';
+    }
+
+    // ===== Тултип =====
+    var tooltipId = 'k_hypo_tooltip_' + Date.now();
+    var tooltipText =
+      'ЭКСТРЕННАЯ В/В КОРРЕКЦИЯ\n' +
+      'Формула: (4,0 − K⁺) × вес × 0,4\n' +
+      'Оценивает внеклеточный дефицит калия.\n' +
+      'Источник: AHA Guidelines (Circulation, 2010)\n\n' +
+      'ОБЩИЙ ДЕФИЦИТ\n' +
+      'Эмпирическая оценка отражает суммарные потери,\n' +
+      'включая внутриклеточный дефицит.\n' +
+      'Восполняется постепенно за 3–5 дней, чаще перорально.\n' +
+      'Градация гипокалиемии — на основе общепринятых клинических порогов.\n\n' +
+      '⚠️ Нельзя вводить весь общий дефицит внутривенно.\n' +
+      'Клетки не успевают поглотить калий из крови,\n' +
+      'что повышает риск острой ятрогенной гиперкалиемии.\n\n' +
+      'СОДЕРЖАНИЕ K⁺ В РАСТВОРАХ\n' +
+      'KCl 4%: 0,54 ммоль/мл\n' +
+      'KCl 7,5%: 1,0 ммоль/мл\n' +
+      'KCl 10%: 1,34 ммоль/мл\n\n' +
+      'ОФИЦИАЛЬНАЯ ИНСТРУКЦИЯ KCl 4%\n' +
+      '10 мл концентрата, разведённые до 100 мл, дают\n' +
+      'концентрацию около 53,7 ммоль/л.\n' +
+      'Допускается также до 2,5 г KCl в 500 мл NaCl 0,9%,\n' +
+      'что соответствует примерно 67,1 ммоль/л.\n\n' +
+      'СКОРОСТЬ ВВЕДЕНИЯ ПО ИНСТРУКЦИИ\n' +
+      'До 20 ммоль/ч у взрослых.\n' +
+      'При K⁺ < 2,0 ммоль/л — до 40 ммоль/ч.\n' +
+      'Для высоких скоростей предпочтительны ЦВК,\n' +
+      'инфузомат и обязательный кардиомониторинг.\n' +
+      'Макс. суточная доза в/в: 2–3 ммоль/кг/сут.\n\n' +
+      'КОНЦЕНТРАЦИЯ В НАШЕМ БЛОКЕ\n' +
+      'Для периферической вены используются более щадящие\n' +
+      'ориентиры для защиты вены:\n' +
+      'При K⁺ ≥ 2,5: ≤20 ммоль/л\n' +
+      'При K⁺ < 2,5: ≤40 ммоль/л\n' +
+      'Через ЦВК допустима концентрация до 60–120 ммоль/л.\n\n' +
+      'РАСТВОРИТЕЛЬ\n' +
+      'Для стандартной коррекции гипокалиемии предпочтителен NaCl 0,9%.\n' +
+      'Растворы глюкозы без специальной цели обычно не используют,\n' +
+      'так как инсулиновый ответ усиливает внутриклеточный сдвиг калия.';
+
+    // Собираем details
+    var details = ivBlock + totalBlock + warningsHtml;
+
+    var valueWithIcon = k.toFixed(1) + ' ммоль/л ' +
+      '<span class="info-icon" id="' + tooltipId + '" style="cursor:help;font-size:20px;opacity:0.6;vertical-align:middle;">ⓘ</span>';
+
+    var html = makeResultCard('Калий — коррекция', valueWithIcon, hypoGrade, hypoRisk, details, '');
+
+    setTimeout(function() {
+      var icon = document.getElementById(tooltipId);
+      if (icon) setupTooltipTrigger(icon, tooltipText);
+    }, 50);
+
+    return html;
+  }
+
+  // ===== ГИПЕРКАЛИЕМИЯ =====
+  if (k > 5.0) {
+    var hyperGrade = '';
+    var hyperRisk = 'moderate';
+    var hyperDetails = '';
+    var hyperWarnings = [];
+
+    // Общее предупреждение про гемолиз
+    hyperWarnings.push('🔬 Исключите гемолиз образца как причину ложного результата.');
+
+    // Тромбоциты
+    if (plt !== null && plt > 400) {
+      hyperWarnings.push('🔬 Тромбоцитоз (' + plt + '×10⁹/л). Возможна псевдогиперкалиемия. Проверьте K⁺ в плазме (не в сыворотке).');
+    }
+
+    if (k <= 5.4) {
+      hyperGrade = 'Лёгкая гиперкалиемия';
+      hyperRisk = 'moderate';
+      hyperDetails =
+        '<div style="font-size:12px;line-height:1.6;">' +
+          '<div>• Повторный контроль K⁺ для подтверждения</div>' +
+          '<div>• Пересмотреть приём: <strong>АМКР, иАПФ, БРА, НПВП</strong></div>' +
+          '<div>• Оценить функцию почек</div>' +
+        '</div>';
+    } else if (k <= 6.0) {
+      hyperGrade = 'Умеренная гиперкалиемия';
+      hyperRisk = 'high';
+      hyperDetails =
+        '<div style="font-size:12px;line-height:1.6;">' +
+          '<div>• <strong>Контроль ЭКГ</strong></div>' +
+          '<div>• Временная отмена / снижение дозы: <strong>АМКР, иАПФ, БРА, НПВП</strong></div>' +
+          '<div>• Ограничить калий в пище</div>' +
+          '<div>• Оценить функцию почек</div>' +
+        '</div>';
+    } else if (k < 6.5) {
+      hyperGrade = 'Тяжёлая гиперкалиемия';
+      hyperRisk = 'veryhigh';
+      hyperDetails =
+        '<div style="font-size:12px;line-height:1.6;">' +
+          '<div>• <strong>Мониторинг ЭКГ</strong></div>' +
+          '<div>• <strong>Отмена</strong> АМКР, иАПФ, БРА, НПВП</div>' +
+          '<div>• Рассмотреть: полистиролсульфонат натрия</div>' +
+          '<div>• Оценить необходимость активных мер коррекции</div>' +
+        '</div>';
+    } else {
+      hyperGrade = 'Тяжёлая гиперкалиемия ⚠️';
+      hyperRisk = 'veryhigh';
+      hyperDetails =
+        '<div style="font-size:12px;line-height:1.6;">' +
+          '<div style="font-weight:700;color:#922b21;margin-bottom:4px;">НЕОТЛОЖНЫЕ МЕРЫ:</div>' +
+          '<div>• <strong>Кальция глюконат 10%</strong> 10–20 мл в/в за 2–3 мин (стабилизация миокарда)</div>' +
+          '<div>• <strong>Инсулин 10 ЕД + глюкоза 40% 50 мл</strong> в/в (сдвиг K⁺ в клетки)</div>' +
+          '<div>• <strong>Сальбутамол</strong> 10–20 мг через небулайзер</div>' +
+          '<div>• <strong>Отмена</strong> всех калийсберегающих препаратов</div>' +
+          '<div>• Рассмотреть <strong>гемодиализ</strong></div>' +
+          '<div style="margin-top:4px;">• <strong>Непрерывный мониторинг ЭКГ</strong></div>' +
+        '</div>';
+    }
+
+    // Добавляем предупреждения
+    var warningsHtml = '';
+    if (hyperWarnings.length > 0) {
+      warningsHtml = '<div style="margin-top:8px;font-size:12px;line-height:1.6;padding:8px 10px;background:#fffbf0;border-left:3px solid #e67e22;border-radius:0 6px 6px 0;">';
+      hyperWarnings.forEach(function(w) {
+        warningsHtml += '<div style="margin-bottom:4px;">' + w + '</div>';
+      });
+      warningsHtml += '</div>';
+    }
+
+    // Тултип для гиперкалиемии
+    var tooltipId = 'k_hyper_tooltip_' + Date.now();
+    var tooltipText =
+      'Классификация гиперкалиемии:\n' +
+      'Лёгкая: 5,0–5,4 ммоль/л\n' +
+      'Умеренная: 5,5–6,0 ммоль/л\n' +
+      'Тяжёлая: >6,0 ммоль/л\n\n' +
+      'Источник: Colombian Consensus on Chronic Hyperkalemia,\n' +
+      'Arch Cardiol Mex, 2023;93(Supl 5):1–12.\n\n' +
+      'Препараты, повышающие K⁺:\n' +
+      'АМКР, иАПФ, БРА, НПВП,\n' +
+      'триметоприм, гепарин, калийсодержащие добавки.';
+
+    var valueWithIcon = k.toFixed(1) + ' ммоль/л ' +
+      '<span class="info-icon" id="' + tooltipId + '" style="cursor:help;font-size:20px;opacity:0.6;vertical-align:middle;">ⓘ</span>';
+
+    var html = makeResultCard('Калий', valueWithIcon, hyperGrade, hyperRisk,
+      hyperDetails + warningsHtml, '');
+
+    setTimeout(function() {
+      var icon = document.getElementById(tooltipId);
+      if (icon) setupTooltipTrigger(icon, tooltipText);
+    }, 50);
+
+    return html;
+  }
+
+  return null;
+}
+
+// ===================================================
 //  АНАЛИЗ: Коррекция натрия при гипергликемии
 // ===================================================
 function renderSodiumCorrectionModule() {
@@ -2735,6 +3083,9 @@ function updateAnalysisPanel() {
   var naModule = renderSodiumCorrectionModule();
   if (naModule) modules.push(naModule);
 
+  var kModule = renderPotassiumModule();
+  if (kModule) modules.push(kModule);
+
   if (modules.length === 0) {
     modulesContainer.innerHTML = '';
     panel.style.display = 'none';
@@ -2755,4 +3106,9 @@ document.addEventListener('DOMContentLoaded', function() {
   var glucoseInput = document.getElementById('glucose');
   if (naMeasured) naMeasured.addEventListener('input', updateAnalysisPanel);
   if (glucoseInput) glucoseInput.addEventListener('input', updateAnalysisPanel);
+
+  var potassiumInput = document.getElementById('potassium');
+  var magnesiumInput = document.getElementById('magnesium');
+  if (potassiumInput) potassiumInput.addEventListener('input', updateAnalysisPanel);
+  if (magnesiumInput) magnesiumInput.addEventListener('input', updateAnalysisPanel);
 });

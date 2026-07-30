@@ -1297,6 +1297,10 @@ body.dark-theme .disclaimer-modal .disclaimer-accept-btn { background: linear-gr
   gap: 0px;
 }
 
+.sidebar-left > .card {
+  flex: 0 0 auto;
+}
+
 .analysis-note {
   font-size: 12px;
   color: #888;
@@ -1331,6 +1335,9 @@ body.dark-theme .disclaimer-modal .disclaimer-accept-btn { background: linear-gr
     margin-bottom: 0;
     max-height: calc(100vh - 110px);
     overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 12px;
+    scrollbar-gutter: stable;
   }
 
   .sidebar-left .input-grid {
