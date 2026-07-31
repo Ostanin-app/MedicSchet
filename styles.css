@@ -1393,3 +1393,9 @@ body.dark-theme .sidebar-left .card {
 body.dark-theme .analysis-note {
   color: #6e7681;
 }
+/* Широкая карточка на 2 колонки (только для больших экранов) */
+@media (min-width: 650px) {
+  .card-span-2 {
+    grid-column: span 2;
+  }
+}
