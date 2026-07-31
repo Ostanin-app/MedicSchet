@@ -808,6 +808,162 @@ function calcBSA(heightCm, weightKg) {
   return Math.sqrt((heightCm * weightKg) / 3600);
 }
 
+function calcIBW(heightCm, sex) {
+  if (!heightCm || heightCm <= 0 || !sex) return null;
+  var inches = heightCm / 2.54;
+  var base = sex === 'f' ? 45.5 : 50;
+  var ibw = base + 2.3 * (inches - 60);
+  return Math.round(ibw * 10) / 10;
+}
+
+function calcABW04(actualWeight, ibw) {
+  if (actualWeight === null || actualWeight <= 0 || ibw === null || ibw <= 0) return null;
+  if (actualWeight <= ibw) return Math.round(actualWeight * 10) / 10;
+  return Math.round((ibw + 0.4 * (actualWeight - ibw)) * 10) / 10;
+}
+
+function calcBMI(weightKg, heightCm) {
+  if (!weightKg || !heightCm || weightKg <= 0 || heightCm <= 0) return null;
+  return Math.round((weightKg / Math.pow(heightCm / 100, 2)) * 10) / 10;
+}
+
+function getCockcroftWeightTooltipText() {
+  return 'TBW — фактический вес.\n' +
+    'IBW — идеальный вес (формула Devine).\n' +
+    'ABW 0.4 — скорректированный вес: IBW + 40% разницы между фактическим и идеальным весом.\n' +
+    'IBW–TBW — функциональный диапазон КлКр: от расчёта по идеальному до расчёта по фактическому весу.\n\n' +
+    'При избытке массы тела расчёт по фактическому весу может завышать КлКр, потому что вклад жировой ткани в продукцию креатинина минимален.\n\n' +
+    'Основано на:\n' +
+    'Winter M.A., et al. Pharmacotherapy, 2012. DOI: 10.1002/j.1875-9114.2012.01098.x\n' +
+    'Brown D.L., et al. Ann Pharmacother, 2013. DOI: 10.1345/aph.1S176';
+}
+
+function getDoacPlanByCrCl(crcl, age, actualWeight, creatUmol, verapamil, hasBledScore) {
+  var result = {};
+
+  // Дабигатран
+  var dabiNote = '';
+  if (crcl < 30) {
+    result.dabigatran = { key: 'contra', text: 'противопоказан', note: '' };
+  } else if (crcl < 50) {
+    result.dabigatran = { key: '110', text: '110 мг 2 р/д', note: 'КлКр 30–49 мл/мин' };
+  } else {
+    var dabiReasons = [];
+    if (age >= 80) dabiReasons.push('возраст ≥80 лет');
+    if (verapamil) dabiReasons.push('приём верапамила');
+    if (hasBledScore >= 3) dabiReasons.push('HAS-BLED ≥3');
+
+    if (dabiReasons.length > 0) {
+      dabiNote = dabiReasons.join('; ');
+      result.dabigatran = { key: '110', text: '110 мг 2 р/д', note: dabiNote };
+    } else {
+      result.dabigatran = { key: '150', text: '150 мг 2 р/д', note: '' };
+    }
+  }
+
+  // Ривароксабан
+  if (crcl < 15) {
+    result.rivaroxaban = { key: 'contra', text: 'противопоказан', note: '' };
+  } else if (crcl < 50) {
+    result.rivaroxaban = { key: '15', text: '15 мг 1 р/д', note: '' };
+  } else {
+    result.rivaroxaban = { key: '20', text: '20 мг 1 р/д', note: '' };
+  }
+
+  // Апиксабан
+  var apixCriteriaCount = 0;
+  var apixReasons = [];
+  if (age >= 80) { apixCriteriaCount++; apixReasons.push('возраст ≥80 лет'); }
+  if (actualWeight !== null && actualWeight <= 60) { apixCriteriaCount++; apixReasons.push('вес ≤60 кг'); }
+  if (creatUmol !== null && creatUmol >= 133) { apixCriteriaCount++; apixReasons.push('креатинин ≥133 мкмоль/л'); }
+
+  if (crcl < 15) {
+    result.apixaban = { key: 'contra', text: 'противопоказан', note: '' };
+  } else if (crcl < 30) {
+    result.apixaban = { key: '2.5', text: '2,5 мг 2 р/д', note: 'КлКр 15–29 мл/мин' };
+  } else if (apixCriteriaCount >= 2) {
+    result.apixaban = { key: '2.5', text: '2,5 мг 2 р/д', note: apixReasons.join('; ') };
+  } else {
+    result.apixaban = { key: '5', text: '5 мг 2 р/д', note: '' };
+  }
+
+  return result;
+}
+
+function buildSingleCgHint(plan) {
+  var dabigatranText = 'Дабигатран: ' + plan.dabigatran.text;
+  if (plan.dabigatran.note) dabigatranText += ' (' + plan.dabigatran.note + ')';
+
+  var rivaroxabanText = 'Ривароксабан: ' + plan.rivaroxaban.text;
+  if (plan.rivaroxaban.note) rivaroxabanText += ' (' + plan.rivaroxaban.note + ')';
+
+  var apixabanText = 'Апиксабан: ' + plan.apixaban.text;
+  if (plan.apixaban.note) apixabanText += ' (' + plan.apixaban.note + ')';
+
+  return dabigatranText + '; ' + rivaroxabanText + '; ' + apixabanText + '.';
+}
+
+function buildCgComparisonHint(plansByMethod, workingMethodLabel, workingCrcl) {
+  var methodOrder = ['IBW', 'ABW 0.4', 'TBW'];
+  var anyDifference = false;
+
+  function buildDrugLine(drugKey, drugLabel) {
+    var available = [];
+    methodOrder.forEach(function(method) {
+      if (plansByMethod[method] && plansByMethod[method][drugKey]) {
+        available.push({
+          method: method,
+          key: plansByMethod[method][drugKey].key,
+          text: plansByMethod[method][drugKey].text
+        });
+      }
+    });
+
+    if (available.length === 0) return '';
+    if (available.length === 1) {
+      return '✅ <strong>' + drugLabel + ':</strong> ' + available[0].text + '.';
+    }
+
+    var firstKey = available[0].key;
+    var allSame = available.every(function(item) { return item.key === firstKey; });
+
+    if (allSame) {
+      return '✅ <strong>' + drugLabel + ':</strong> ' + available[0].text + ' — выбор веса не меняет дозу.';
+    }
+
+    anyDifference = true;
+    var parts = available.map(function(item) {
+      return item.method + ' — ' + item.text;
+    });
+
+    return '⚠️ <strong>' + drugLabel + ':</strong> ' + parts.join(' • ') + '.';
+  }
+
+  var html =
+    '<div style="margin-bottom:6px;">' +
+      'Рабочая оценка для дозирования: <strong>' + workingMethodLabel + ' = ' + workingCrcl.toFixed(1) + ' мл/мин</strong>.' +
+    '</div>' +
+    '<div style="font-size:12px;line-height:1.55;">' +
+      '<div style="margin-bottom:4px;">' + buildDrugLine('dabigatran', 'Дабигатран') + '</div>' +
+      '<div style="margin-bottom:4px;">' + buildDrugLine('rivaroxaban', 'Ривароксабан') + '</div>' +
+      '<div>' + buildDrugLine('apixaban', 'Апиксабан') + '</div>' +
+    '</div>';
+
+  if (anyDifference) {
+    html +=
+      '<div style="margin-top:6px;">' +
+        '⚠️ Доза зависит от выбора веса. Используйте рабочий КлКр как ориентир и принимайте решение с учётом клиники и риска кровотечения.' +
+      '</div>';
+  } else {
+    html +=
+      '<div style="margin-top:6px;">' +
+        '✅ Выбор веса не меняет дозирование ПОАК.' +
+      '</div>';
+  }
+
+  return html;
+}
+
 // ===================================================
 //  GRACE (points-based, validated GRACE 1.0 nomogram)
 // ===================================================
@@ -1689,7 +1845,11 @@ const OCR_INDICATORS = [
   // калий
   { keys: ['калий', 'k', 'potassium', 'калий (ммоль/л)', 'k+'], field: 'potassium', unitExpected: 'ммоль/л' },
   // магний
-  { keys: ['магний', 'mg', 'magnesium', 'магний (ммоль/л)', 'mg2+'], field: 'magnesium', unitExpected: 'ммоль/л' }
+  { keys: ['магний', 'mg', 'magnesium', 'магний (ммоль/л)', 'mg2+'], field: 'magnesium', unitExpected: 'ммоль/л' },
+  // КФК общая
+  { keys: ['кфк', 'креатинфосфокиназа', 'креатинкиназа', 'ck', 'ck-nac', 'кфк общая'], field: 'ck_total', unitExpected: 'Ед/л' },
+  // КФК-МВ
+  { keys: ['кфк-мв', 'кфк мв', 'ck-mb', 'kk-mb', 'кк-мв', 'kk', 'mb'], field: 'ck_mb', unitExpected: 'Ед/л' }
 ];
 
 function parseEMRText(text) {
@@ -1707,8 +1867,31 @@ function parseEMRText(text) {
     if (parts.length < 2) continue;
 
     const rawName = (parts[0] || '').trim();
-    const valueCell = (parts[1] || '').replace(/▲/g, '').trim();
-    const numMatch = valueCell.match(/(\d+[.,]\d+|\d+)/);
+    let valueCell = '';
+    let numMatch = null;
+
+    // Счётчик для проверки только первых осмысленных ячеек после названия
+    let checkedCount = 0; 
+    for (let i = 1; i < parts.length; i++) {
+      let cellText = (parts[i] || '').trim();
+      if (!cellText) continue; // Пропускаем абсолютно пустые ячейки (лишние табуляции)
+      
+      checkedCount++;
+      // Ищем число только в первой или второй непустой ячейке после названия
+      // Обычно результат в 1-й, но если там только стрелка, смотрим 2-ю.
+      let cleanCell = cellText.replace(/[▲▼]/g, '').replace(/\s+/g, ' ').trim();
+      let match = cleanCell.match(/^(\d+[.,]\d+|\d+)/); // Ищем число именно в НАЧАЛЕ ячейки
+      
+      if (match) {
+        valueCell = cleanCell;
+        numMatch = match;
+        break; 
+      }
+      
+      // Если проверили 2 непустые ячейки и числа не нашли, значит дальше уже референсы или мусор
+      if (checkedCount >= 2) break; 
+    }
+    
     if (!numMatch) continue;
     const numValue = parseFloat(numMatch[0].replace(',', '.'));
     if (isNaN(numValue)) continue;
@@ -1743,7 +1926,7 @@ function parseEMRText(text) {
 
   // === ЭТАП 2: свободный текст (без табуляции) ===
   if (!usedTsv) {
-    const cleanText = text.replace(/▲/g, ' ');
+    const cleanText = text.replace(/[▲▼]/g, ' ');
     for (const ind of OCR_INDICATORS) {
       for (const key of ind.keys) {
         const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -1780,7 +1963,6 @@ function findIndicator(rawName) {
   for (const ind of OCR_INDICATORS) {
     for (const key of ind.keys) {
       const cleanKey = key.toLowerCase().replace(/[^a-zа-я0-9]/g, '');
-      if (cleanKey.length < 2) continue; // пропускаем одиночные буквы
       if (words.some(word => word === cleanKey)) {
         return ind;
       }
@@ -1848,10 +2030,10 @@ function applyParsedData(parsedItems) {
     applied.push(item.label);
   }
   
+  updateAnalysisPanel();
+  
   return { applied, skipped };
 }
-
-// ... остальной код (handleEmrPaste, init) остаётся без изменений
 
 function handleEmrPaste() {
   const textarea = document.getElementById('emrPaste');
@@ -1898,6 +2080,8 @@ function handleEmrPaste() {
   
   statusEl.textContent = statusMsg;
   autofill();
+  
+  updateAnalysisPanel();
 }
 
 // Инициализация обработчиков
@@ -1993,89 +2177,184 @@ function calculate() {
 
   // --- Кокрофт-Голт ---
   if (isScaleActive('cg') && age && weight && creat) {
-      cgCrcl = calcCG(age, sex, weight, creat);
-      if (cgCrcl === null) {
+      // ВАЖНО:
+      // cgCrcl сохраняем как расчёт по фактическому весу,
+      // чтобы не менять логику других шкал (например, CRUSADE) без отдельного согласования.
+      var cgCrclTbw = calcCG(age, sex, weight, creat);
+      cgCrcl = cgCrclTbw;
+
+      if (cgCrclTbw === null) {
           errors.push('Некорректные данные для Кокрофт-Голт (проверьте возраст <140, вес >0, креатинин >0)');
       } else {
-          var bsa = calcBSA(height, weight);
-          var cgCrclNorm = null;
-          if (bsa !== null) {
-              cgCrclNorm = cgCrcl * (1.73 / bsa);
+          var bmi = calcBMI(weight, height);
+          var isOverweightForCg = (bmi !== null && bmi >= 25);
+          var ibw = calcIBW(height, sex);
+          var cgCrclIbw = ibw !== null ? calcCG(age, sex, ibw, creat) : null;
+          var abw04 = (isOverweightForCg && ibw !== null && weight > ibw) ? calcABW04(weight, ibw) : null;
+          var cgCrclAbw = abw04 !== null ? calcCG(age, sex, abw04, creat) : null;
+
+          var workingCrcl = cgCrclTbw;
+          var workingMethodLabel = 'TBW';
+          var workingMethodRu = 'фактический вес';
+          var categoryText = 'Дефицит массы тела';
+          var methodNote = 'Рабочий КлКр рассчитан по фактическому весу (Winter, 2012).';
+          var methodBlockStyle = 'margin-top:8px;padding:8px 10px;background:#f0fff4;border-left:3px solid #27ae60;border-radius:0 6px 6px 0;font-size:12px;line-height:1.5;';
+          var brownLower = null;
+          var brownUpper = null;
+
+          if (bmi !== null && cgCrclIbw !== null) {
+              if (bmi < 18.5) {
+                  workingCrcl = cgCrclTbw;
+                  workingMethodLabel = 'TBW';
+                  workingMethodRu = 'фактический вес';
+                  categoryText = 'Дефицит массы тела';
+                  methodNote = 'Рабочий КлКр рассчитан по фактическому весу (Winter, 2012).';
+                  methodBlockStyle = 'margin-top:8px;padding:8px 10px;background:#f0fff4;border-left:3px solid #27ae60;border-radius:0 6px 6px 0;font-size:12px;line-height:1.5;';
+              } else if (bmi < 25) {
+                  workingCrcl = cgCrclIbw;
+                  workingMethodLabel = 'IBW';
+                  workingMethodRu = 'идеальный вес';
+                  categoryText = 'Нормальная масса тела';
+                  methodNote = 'Рабочий КлКр рассчитан по идеальному весу (Winter, 2012).';
+                  methodBlockStyle = 'margin-top:8px;padding:8px 10px;background:#f0fff4;border-left:3px solid #27ae60;border-radius:0 6px 6px 0;font-size:12px;line-height:1.5;';
+              } else if (bmi < 30) {
+                  if (cgCrclAbw !== null) {
+                      workingCrcl = cgCrclAbw;
+                      workingMethodLabel = 'ABW 0.4';
+                      workingMethodRu = 'скорректированный вес';
+                  } else {
+                      workingCrcl = cgCrclIbw;
+                      workingMethodLabel = 'IBW';
+                      workingMethodRu = 'идеальный вес';
+                  }
+                  categoryText = 'Избыточная масса тела';
+                  methodNote = 'КлКр по фактическому весу может быть завышен. ABW 0.4 — наименее смещённая оценка по Winter (2012).';
+                  methodBlockStyle = 'margin-top:8px;padding:8px 10px;background:#fffaf0;border-left:3px solid #e67e22;border-radius:0 6px 6px 0;font-size:12px;line-height:1.5;';
+              } else {
+                  if (cgCrclAbw !== null) {
+                      workingCrcl = cgCrclAbw;
+                      workingMethodLabel = 'ABW 0.4';
+                      workingMethodRu = 'скорректированный вес';
+                  } else {
+                      workingCrcl = cgCrclIbw;
+                      workingMethodLabel = 'IBW';
+                      workingMethodRu = 'идеальный вес';
+                  }
+                  categoryText = 'Ожирение';
+                  methodNote = 'КлКр по фактическому весу может значительно завышать функцию почек. ABW 0.4 — наименее смещённая оценка по Winter (2012), но остаётся приблизительной.';
+                  methodBlockStyle = 'margin-top:8px;padding:8px 10px;background:#fdf2f1;border-left:3px solid #c0392b;border-radius:0 6px 6px 0;font-size:12px;line-height:1.5;';
+              }
           }
-        
-          var cgRisk = cgCrcl >= 50 ? 'low' : cgCrcl >= 30 ? 'moderate' : 'high';
-          var detailsText = 'КлКр (абс.): ' + cgCrcl.toFixed(1) + ' мл/мин';
-          if (cgCrclNorm !== null) {
-              detailsText += '<br>КлКр (на ППТ): ' + cgCrclNorm.toFixed(1) + ' мл/мин/1.73 м²';
-          } else {
-              detailsText += '<br>ППТ не рассчитана (проверьте рост и вес)';
+
+          if (isOverweightForCg && ibw !== null && cgCrclIbw !== null && cgCrclTbw !== null && weight > ibw) {
+              brownLower = Math.min(cgCrclIbw, cgCrclTbw);
+              brownUpper = Math.max(cgCrclIbw, cgCrclTbw);
           }
-        
-          // ------------------- РАСЧЁТ ПОДСКАЗКИ ПО ДОЗАМ ПОАК -------------------
-          var hintText = '';
+
+          var cgRisk = workingCrcl >= 50 ? 'low' : workingCrcl >= 30 ? 'moderate' : 'high';
+          var cgInterp = workingCrcl >= 50 ? 'Норма / незначительное снижение' : workingCrcl >= 30 ? 'Умеренное снижение' : 'Тяжёлое снижение';
+
+          var cgTooltipId = 'cg_weight_tooltip_' + Date.now();
+          var cgTooltipText = getCockcroftWeightTooltipText();
+
+          var detailsParts = [];
+          if (bmi !== null) {
+              detailsParts.push('ИМТ: ' + bmi.toFixed(1) + ' кг/м²');
+          }
+          detailsParts.push('Рабочий КлКр (' + workingMethodLabel + ', ' + workingMethodRu + '): ' + workingCrcl.toFixed(1) + ' мл/мин');
+          detailsParts.push('КлКр (TBW, фактический вес ' + weight.toFixed(1) + ' кг): ' + cgCrclTbw.toFixed(1) + ' мл/мин');
+          if (ibw !== null && cgCrclIbw !== null) {
+              detailsParts.push('КлКр (IBW, идеальный вес ' + ibw.toFixed(1) + ' кг): ' + cgCrclIbw.toFixed(1) + ' мл/мин');
+          }
+          if (isOverweightForCg && abw04 !== null && cgCrclAbw !== null) {
+              detailsParts.push('КлКр (ABW 0.4, скорректированный вес ' + abw04.toFixed(1) + ' кг): ' + cgCrclAbw.toFixed(1) + ' мл/мин');
+          }
+          if (brownLower !== null && brownUpper !== null) {
+              detailsParts.push('Функциональный диапазон IBW–TBW: ' + brownLower.toFixed(1) + '–' + brownUpper.toFixed(1) + ' мл/мин');
+          }
+
+          var detailsText = detailsParts.join('<br>') +
+              '<div style="' + methodBlockStyle + '">' +
+                  '<strong>' + categoryText + '</strong> ' +
+                  '<span class="info-icon" id="' + cgTooltipId + '" style="cursor:help;font-size:18px;opacity:0.6;vertical-align:middle;">ⓘ</span><br>' +
+                  methodNote +
+              '</div>';
+
+          var hasBledScoreForCg = calcHASBLED();
           var verapamil = cb('cb_verapamil');
-          var hbScore = calcHASBLED(); // используем готовую функцию
-        
-          // Дабигатран
-          var dabi = '';
-          if (cgCrcl < 30) {
-              dabi = '❌ Дабигатран противопоказан';
-          } else if (cgCrcl >= 30 && cgCrcl < 50) {
-              dabi = 'Дабигатран 110 мг 2 р/д (КлКр 30–49)';
-          } else { // cgCrcl >= 50
-              var reasons = [];
-              if (age >= 80) reasons.push('возраст ≥80 лет');
-              if (verapamil) reasons.push('приём верапамила');
-              if (hbScore >= 3) reasons.push('HAS-BLED ≥3');
-              if (reasons.length > 0) {
-                  dabi = 'Дабигатран 110 мг 2 р/д (' + reasons.join('; ') + ')';
-              } else {
-                  dabi = 'Дабигатран 150 мг 2 р/д';
+
+          var workingPlan = getDoacPlanByCrCl(workingCrcl, age, weight, creat, verapamil, hasBledScoreForCg);
+          var hintText = '';
+
+          if (bmi !== null && bmi >= 25 && cgCrclIbw !== null) {
+              var plansByMethod = {
+                  'IBW': getDoacPlanByCrCl(cgCrclIbw, age, weight, creat, verapamil, hasBledScoreForCg),
+                  'TBW': getDoacPlanByCrCl(cgCrclTbw, age, weight, creat, verapamil, hasBledScoreForCg)
+              };
+              if (cgCrclAbw !== null) {
+                  plansByMethod['ABW 0.4'] = getDoacPlanByCrCl(cgCrclAbw, age, weight, creat, verapamil, hasBledScoreForCg);
               }
-          }
-        
-          // Ривароксабан
-          var riva = '';
-          if (cgCrcl < 15) {
-              riva = '❌ Ривароксабан противопоказан';
-          } else if (cgCrcl >= 15 && cgCrcl < 50) {
-              riva = 'Ривароксабан 15 мг 1 р/д';
+              hintText = buildCgComparisonHint(plansByMethod, workingMethodLabel, workingCrcl);
           } else {
-              riva = 'Ривароксабан 20 мг 1 р/д';
+              hintText = buildSingleCgHint(workingPlan);
           }
-        
-          // Апиксабан
-          var apix = '';
-          if (cgCrcl < 15) {
-              apix = '❌ Апиксабан противопоказан';
-          } else if (cgCrcl >= 15 && cgCrcl < 30) {
-              apix = 'Апиксабан 2,5 мг 2 р/д (КлКр 15–29)';
-          } else {
-              var criteriaCount = 0;
-              var criteriaText = [];
-              if (age >= 80) { criteriaCount++; criteriaText.push('возраст ≥80 лет'); }
-              if (weight !== null && weight <= 60) { criteriaCount++; criteriaText.push('вес ≤60 кг'); }
-              if (creat !== null && creat >= 133) { criteriaCount++; criteriaText.push('креатинин ≥133 мкмоль/л'); }
-              if (criteriaCount >= 2) {
-                  apix = 'Апиксабан 2,5 мг 2 р/д (' + criteriaText.join('; ') + ')';
-              } else {
-                  apix = 'Апиксабан 5 мг 2 р/д';
-              }
-          }
-          
-          // Собираем итоговую подсказку
-          hintText = dabi + '; ' + riva + '; ' + apix + '.';
-          // --------------------------------------------------------------------
-        
+
           resultsHTML += makeResultCard(
             'Кокрофт-Голт',
-            cgCrcl.toFixed(1) + ' мл/мин',
-            cgCrcl >= 50 ? 'Норма / незначительное снижение' : cgCrcl >= 30 ? 'Умеренное снижение' : 'Тяжёлое снижение',
+            workingCrcl.toFixed(1) + ' мл/мин',
+            cgInterp,
             cgRisk,
             detailsText,
-            hintText
+            hintText,
+            'card-span-2'
           );
-          copyLines.push('Кокрофт-Голт: ' + cgCrcl.toFixed(1) + ' мл/мин' + (cgCrclNorm ? ' (на ППТ: ' + cgCrclNorm.toFixed(1) + ')' : ''));
+
+          setTimeout(function() {
+              var icon = document.getElementById(cgTooltipId);
+              if (icon) setupTooltipTrigger(icon, cgTooltipText);
+          }, 50);
+
+          var copyStr = 'КлКр по Кокрофту-Голту: ';
+          if (cgCrclTbw !== null) {
+              copyStr += cgCrclTbw.toFixed(1).replace('.', ',') + ' мл/мин (по фактической массе тела (TBW))';
+          }
+          if (cgCrclIbw !== null) {
+              copyStr += ', ' + cgCrclIbw.toFixed(1).replace('.', ',') + ' мл/мин (по идеальной массе тела (IBW))';
+          }
+          if (isOverweightForCg && cgCrclAbw !== null) {
+              copyStr += ', ' + cgCrclAbw.toFixed(1).replace('.', ',') + ' мл/мин (по скорректированной массе тела (ABW 0.4))';
+          }
+          
+          if (isOverweightForCg && brownLower !== null && brownUpper !== null) {
+              copyStr += '; диапазон IBW–TBW: ' + brownLower.toFixed(1).replace('.', ',') + '–' + brownUpper.toFixed(1).replace('.', ',') + ' мл/мин';
+          }
+          
+          if (bmi !== null) {
+              copyStr += '. ИМТ: ' + bmi.toFixed(1).replace('.', ',') + ' кг/м²';
+          }
+
+          // Проверяем, есть ли расхождения в дозах ПОАК для пациентов с избыточным весом
+          if (isOverweightForCg && typeof plansByMethod !== 'undefined') {
+              var diff = false;
+              ['dabigatran', 'rivaroxaban', 'apixaban'].forEach(function(drug) {
+                  var vals = [];
+                  if (plansByMethod['IBW'] && plansByMethod['IBW'][drug]) vals.push(plansByMethod['IBW'][drug].key);
+                  if (plansByMethod['TBW'] && plansByMethod['TBW'][drug]) vals.push(plansByMethod['TBW'][drug].key);
+                  if (plansByMethod['ABW 0.4'] && plansByMethod['ABW 0.4'][drug]) vals.push(plansByMethod['ABW 0.4'][drug].key);
+                  
+                  for (var i = 1; i < vals.length; i++) {
+                      if (vals[i] !== vals[0]) diff = true;
+                  }
+              });
+              
+              if (diff) {
+                  copyStr += '. Дозирование ПОАК зависит от выбора массы тела, требуется клиническая оценка.';
+              } else {
+                  copyStr += '. Дозирование ПОАК не зависит от выбора массы тела.';
+              }
+          }
+
+          copyLines.push(copyStr);
       }
   }
 
@@ -2407,8 +2686,9 @@ function calculate() {
 // ===================================================
 //  RENDER RESULT CARD
 // ===================================================
-function makeResultCard(title, value, interp, risk, details, hint) {
-  return '<div class="result-card risk-' + risk + '">' +
+function makeResultCard(title, value, interp, risk, details, hint, extraClass) {
+  var cls = extraClass ? ' ' + extraClass : '';
+  return '<div class="result-card risk-' + risk + cls + '">' +
     '<div class="result-card-header">' + title + '</div>' +
     '<div class="result-card-body">' +
       '<div class="result-value">' + value + '</div>' +
@@ -2975,63 +3255,124 @@ function renderSodiumCorrectionModule() {
   if (na === null || glu === null) return null;
 
   if (na <= 0 || glu <= 0) {
-    return makeResultCard('Скорректированный натрий', 'Ошибка данных',
-      'Значения должны быть больше 0', 'moderate',
-      'Проверьте корректность введённых натрия и глюкозы.', '');
+    return makeResultCard('Натрий', 'Ошибка данных',
+      'Проверьте корректность введённых значений','moderate',
+      'Значения должны быть больше 0.','');
   }
 
-  // Если глюкоза в норме — коррекция не нужна
-  if (glu <= 5.55) {
-    return makeResultCard('Скорректированный натрий', na.toFixed(0) + ' ммоль/л',
-      'Коррекция не требуется', 'low',
-      'Уровень глюкозы в норме (≤5,6 ммоль/л). Измеренный натрий является истинным.', '');
+  var measuredNa = na;
+  var glucose = glu;
+
+  // Формулы коррекции
+  var katz = measuredNa + 1.6 * ((glucose - 5.55) / 5.55);
+  var hillier = measuredNa + 2.4 * ((glucose - 5.55) / 5.55);
+
+  // Определяем истинный натрий (используем Хиллиера для стратификации риска)
+  var trueNa;
+  if (glucose <= 5.55) {
+    trueNa = measuredNa;
+  } else {
+    trueNa = hillier;
   }
 
-  // Формула Каца (1973), коэффициент 1,6
-  var katz = na + 1.6 * ((glu - 5.55) / 5.55);
-  // Формула Хиллиера (1999), коэффициент 2,4
-  var hillier = na + 2.4 * ((glu - 5.55) / 5.55);
+  // Классификация истинного натрия (строгие границы для дробных чисел)
+  var interp, risk, detailsExtra;
 
-  // Интерпретация по скорректированному натрию (Кац)
-  var risk = 'low';
-  var interp = 'Псевдогипонатриемия';
-  var detailsExtra = 'Истинный уровень натрия в норме после поправки на глюкозу.';
-
-  if (katz < 135) {
-    risk = 'high';
-    interp = 'Истинная гипонатриемия';
-    detailsExtra = 'У пациента реальный дефицит натрия, требующий внимания.';
-  } else if (katz > 145) {
+  if (trueNa < 120) {
     risk = 'veryhigh';
-    interp = 'Истинная гипернатриемия';
-    detailsExtra = 'Высокая концентрация натрия даже с поправкой на глюкозу.';
+    interp = '⚠️ Критическая гипонатриемия';
+  } else if (trueNa < 125) {
+    risk = 'veryhigh';
+    interp = 'Тяжелая гипонатриемия';
+  } else if (trueNa < 130) {
+    risk = 'high';
+    interp = 'Умеренная гипонатриемия';
+  } else if (trueNa < 135) {
+    risk = 'moderate';
+    interp = 'Лёгкая гипонатриемия';
+  } else if (trueNa <= 145) {
+    risk = 'low';
+    interp = 'Натрий в норме';
+  } else if (trueNa <= 150) {
+    risk = 'moderate';
+    interp = 'Лёгкая гипернатриемия';
+  } else if (trueNa <= 155) {
+    risk = 'high';
+    interp = 'Умеренная гипернатриемия';
+  } else {
+    risk = 'veryhigh';
+    interp = '⚠️ Тяжелая гипернатриемия';
   }
 
-  var tooltipText = 'Измеренный Na: ' + na.toFixed(1) + ' ммоль/л\n' +
-    'Глюкоза: ' + glu.toFixed(1) + ' ммоль/л\n\n' +
-    'Хиллиер (коэф. 2,4): ' + hillier.toFixed(1) + ' ммоль/л\n' +
-    'Кац (коэф. 1,6): ' + katz.toFixed(1) + ' ммоль/л\n\n' +
-    'Хиллиер (1999) — точнее при выраженной гипергликемии (>22 ммоль/л).\n' +
-    'Кац (1973) — классическая формула.';
+  // Дополнительная логика для случая повышенной глюкозы
+  if (glucose > 5.55) {
 
-  var tooltipId = 'na_correction_tooltip_' + Date.now();
+    // Сценарий 1: Псевдогипонатриемия (на бумаге низкий, а по факту - НОРМА)
+    if (measuredNa < 135 && trueNa >= 135 && trueNa <= 145) {
+      interp = 'Псевдогипонатриемия';
+      detailsExtra = 
+        '<div style="margin-bottom:6px;">Снижение натрия на бумаге обусловлено сдвигом воды из-за гипергликемии. Истинный уровень натрия находится в пределах нормы.</div>' +
+        '<div style="padding:6px 8px;background:#fffbf0;border-left:3px solid #e67e22;border-radius:0 4px 4px 0;font-size:11.5px;">❗️ <strong>Важно:</strong> введение гипертонического натрия в этой ситуации противопоказано.</div>';
+    } 
+    // Сценарий 2: Маскированная гипернатриемия (на бумаге норма или низкий, а по факту - ВЫСОКИЙ)
+    else if (measuredNa <= 145 && trueNa > 145) {
+      detailsExtra = '<div style="margin-bottom:6px;">Истинный уровень натрия выше измеренного. Гипергликемия маскирует гипернатриемию (вероятна дегидратация).</div>';
+    }
+    // Сценарий 3: Истинная гипонатриемия (остался низким)
+    else if (trueNa < 135) {
+      detailsExtra = '<div style="margin-bottom:6px;">Даже с поправкой на гипергликемию у пациента сохраняется истинный дефицит натрия.</div>';
+    }
+    // Остальные случаи (был высокий, остался высоким)
+    else {
+      detailsExtra = '<div style="margin-bottom:6px;">Скорректированный с учётом гипергликемии истинный уровень натрия.</div>';
+    }
 
-  var details =
-    '<span style="font-size:12px;color:#555;">' + detailsExtra + '</span>';
+    var tooltipId = 'na_correction_tooltip_' + Date.now();
 
-  var valueWithIcon = hillier.toFixed(1) + ' / ' + katz.toFixed(1) + ' ммоль/л ' +
-    '<span class="info-icon" id="' + tooltipId + '" style="cursor:help;font-size:20px;opacity:0.6;vertical-align:middle;">ⓘ</span>';
+    var valueWithIcon = hillier.toFixed(1) + ' / ' + katz.toFixed(1) + ' ммоль/л ' +
+      '<span class="info-icon" id="' + tooltipId + '" style="cursor:help;font-size:20px;opacity:0.6;vertical-align:middle;">ⓘ</span>';
 
-  var html = makeResultCard('Скорректированный натрий', valueWithIcon,
-    interp, risk, details, '');
+    var html = makeResultCard(
+      'Скорректированный натрий',
+      valueWithIcon,
+      interp,
+      risk,
+      detailsExtra,
+      ''
+    );
 
-  // Подключаем тултип после того, как карточка появится в DOM
-  setTimeout(function() {
-    var icon = document.getElementById(tooltipId);
-    if (icon) setupTooltipTrigger(icon, tooltipText);
-  }, 50);
+    var tooltipText =
+      'Измеренный Na: ' + measuredNa.toFixed(1) + ' ммоль/л\n' +
+      'Глюкоза: ' + glucose.toFixed(1) + ' ммоль/л\n\n' +
+      'Хиллиер (коэф. 2,4): ' + hillier.toFixed(1) + ' ммоль/л\n' +
+      'Кац (коэф. 1,6): ' + katz.toFixed(1) + ' ммоль/л\n\n' +
+      'Формула Хиллиера считается более точной при выраженной гипергликемии (>22 ммоль/л).';
 
-  return html;
+    setTimeout(function() {
+      var icon = document.getElementById(tooltipId);
+      if (icon) setupTooltipTrigger(icon, tooltipText);
+    }, 50);
+
+    return html;
+
+  } else {
+
+    // Сценарий: глюкоза не повышена (норма или гипогликемия)
+    if (glucose < 3.3) {
+      detailsExtra = '<div style="margin-bottom:6px;">Гипогликемия. Коррекция натрия не требуется, измеренный показатель является истинным.</div>';
+    } else {
+      detailsExtra = '<div style="margin-bottom:6px;">Глюкоза в норме. Измеренный натрий является истинным.</div>';
+    }
+
+    return makeResultCard(
+      'Натрий',
+      measuredNa.toFixed(1) + ' ммоль/л',
+      interp,
+      risk,
+      detailsExtra,
+      ''
+    );
+  }
 }
 
 // ===================================================
@@ -3040,17 +3381,29 @@ function renderSodiumCorrectionModule() {
 function renderCKMBIndexModule() {
   var ckTotal = parseNum('ck_total');
   var ckMb = parseNum('ck_mb');
+  
   if (ckTotal === null || ckMb === null) return null;
+  
   if (ckTotal <= 0 || ckMb < 0) {
     return makeResultCard('Индекс КФК-МВ','Ошибка данных',
       'Проверьте корректность значений','moderate',
       'КФК общая должна быть больше 0.','');
   }
+  
+  // Проверка на опечатку ВАЖНЕЕ скрытия блока.
+  // Если КФК-МВ больше общей КФК — это 100% ошибка ввода, предупреждаем врача.
   if (ckMb > ckTotal) {
     return makeResultCard('Индекс КФК-МВ','Ошибка данных',
       'КФК-МВ не может превышать общую КФК','moderate',
       'Проверьте значения.','');
   }
+
+  // Верхняя граница лабораторной нормы общей КФК
+  var CK_TOTAL_UPPER_LIMIT = 171;
+
+  // Если общая КФК в норме (и нет опечаток), индекс не считаем и блок не показываем
+  if (ckTotal <= CK_TOTAL_UPPER_LIMIT) return null;
+
   var ri = (ckMb / ckTotal) * 100;
   var riFormatted = ri.toFixed(1).replace('.', ',');
   var risk = 'moderate';
