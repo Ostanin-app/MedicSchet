@@ -827,6 +827,63 @@ function calcBMI(weightKg, heightCm) {
   return Math.round((weightKg / Math.pow(heightCm / 100, 2)) * 10) / 10;
 }
 
+function getWorkingCrClData(age, sex, height, weight, creatUmol) {
+  if (age === null || !sex || height === null || height <= 0 || weight === null || weight <= 0 || creatUmol === null || creatUmol <= 0) {
+    return null;
+  }
+
+  var tbwCrcl = calcCG(age, sex, weight, creatUmol);
+  if (tbwCrcl === null) return null;
+
+  var bmi = calcBMI(weight, height);
+  var ibw = calcIBW(height, sex);
+  var ibwCrcl = ibw !== null ? calcCG(age, sex, ibw, creatUmol) : null;
+  var isOverweightForCg = (bmi !== null && bmi >= 25);
+  var abw04 = (isOverweightForCg && ibw !== null && weight > ibw) ? calcABW04(weight, ibw) : null;
+  var abwCrcl = abw04 !== null ? calcCG(age, sex, abw04, creatUmol) : null;
+
+  var workingCrcl = tbwCrcl;
+  var workingMethodLabel = 'TBW';
+
+  if (bmi !== null && ibwCrcl !== null) {
+    if (bmi < 18.5) {
+      workingCrcl = tbwCrcl;
+      workingMethodLabel = 'TBW';
+    } else if (bmi < 25) {
+      workingCrcl = ibwCrcl;
+      workingMethodLabel = 'IBW';
+    } else if (bmi < 30) {
+      if (abwCrcl !== null) {
+        workingCrcl = abwCrcl;
+        workingMethodLabel = 'ABW 0.4';
+      } else {
+        workingCrcl = ibwCrcl;
+        workingMethodLabel = 'IBW';
+      }
+    } else {
+      if (abwCrcl !== null) {
+        workingCrcl = abwCrcl;
+        workingMethodLabel = 'ABW 0.4';
+      } else {
+        workingCrcl = ibwCrcl;
+        workingMethodLabel = 'IBW';
+      }
+    }
+  }
+
+  return {
+    bmi: bmi,
+    tbwCrcl: tbwCrcl,
+    ibw: ibw,
+    ibwCrcl: ibwCrcl,
+    abw04: abw04,
+    abwCrcl: abwCrcl,
+    workingCrcl: workingCrcl,
+    workingMethodLabel: workingMethodLabel,
+    isOverweightForCg: isOverweightForCg
+  };
+}
+
 function getCockcroftWeightTooltipText() {
   return 'TBW — фактический вес.\n' +
     'IBW — идеальный вес (формула Devine).\n' +
@@ -2978,10 +3035,15 @@ window.calcKInfusion = function() {
     }
 
     var potassiumEl = document.getElementById('potassium');
-    var kValueRaw = potassiumEl ? potassiumEl.value.trim().replace(',', '.') : '';
-    var kValueNum = parseFloat(kValueRaw);
+    var magnesiumEl = document.getElementById('magnesium');
 
-    // Выбранный препарат
+    var kValueRaw = potassiumEl ? potassiumEl.value.trim().replace(',', '.') : '';
+    var mgValueRaw = magnesiumEl ? magnesiumEl.value.trim().replace(',', '.') : '';
+
+    var kValueNum = parseFloat(kValueRaw);
+    var mgValueNum = parseFloat(mgValueRaw);
+
+    // Выбранный препарат KCl
     var drugEls = document.getElementsByName('k_drug');
     var drugMmol = 0.54;
     var drugName = '4';
@@ -3009,17 +3071,16 @@ window.calcKInfusion = function() {
             break;
         }
     }
-
     var accessText = isCvk ? 'ЦВК' : 'ПВК';
 
-    // Ограничения безопасности
+    // Ограничения безопасности для калия
     var maxConc = isCvk ? 120 : 40; // ммоль/л
     var maxRate = isCvk ? 20 : 10;  // ммоль/ч
 
-    // Сколько ммоль максимум можно безопасно влить в выбранный объём
+    // Максимум ммоль калия для выбранного объёма
     var maxMmolForVol = maxConc * volL;
 
-    // Сколько реально вольём в рамках выбранных условий
+    // Реально вводимый калий
     var mmolToInfuse = Math.min(deficit, maxMmolForVol);
     mmolToInfuse = Math.floor(mmolToInfuse * 10) / 10;
     if (mmolToInfuse <= 0) {
@@ -3027,11 +3088,46 @@ window.calcKInfusion = function() {
         return;
     }
 
-    // Объём концентрата
+    // Объём концентрата KCl
     var requiredMlNum = mmolToInfuse / drugMmol;
     var requiredMl = requiredMlNum.toFixed(1).replace('.', ',');
 
-    // Время по пределу скорости (потом округляем ВВЕРХ до 15 минут)
+    // ===== Магний =====
+    var addMgCheckbox = document.getElementById('k_add_mg');
+    var addMg = !!(addMgCheckbox && addMgCheckbox.checked);
+    var mgMlNum = 0;
+    var mgLabelText = '';
+    var mgWarningText = '';
+
+    if (addMg && !isNaN(mgValueNum)) {
+        if (mgValueNum < 0.5) {
+            mgMlNum = 10;
+        } else if (mgValueNum < 0.7) {
+            mgMlNum = 5;
+        }
+
+        if (mgMlNum > 0) {
+            mgLabelText = '<div class="k-builder__result-line">Дополнительно: <strong>' + mgMlNum + ' мл</strong> (MgSO₄ 25%)</div>';
+        }
+
+        // Оценка функции почек только если магний реально добавлен
+        var age = parseNum('age');
+        var sexEl = document.getElementById('sex');
+        var sex = sexEl ? sexEl.value : '';
+        var height = parseNum('height');
+        var weight = parseNum('weight');
+        var creat = parseNum('creatinine');
+
+        var crclData = getWorkingCrClData(age, sex, height, weight, creat);
+
+        if (!crclData || crclData.workingCrcl === null) {
+            mgWarningText = 'Функция почек не оценена. При тяжёлой ХБП риск гипермагниемии. Осторожно при AV-блокадах.';
+        } else if (crclData.workingCrcl < 30) {
+            mgWarningText = 'Внимание: рабочий КлКр ' + crclData.workingCrcl.toFixed(1).replace('.', ',') + ' мл/мин. Повышен риск гипермагниемии. Требуется осторожность, контроль Mg²⁺ и клинический мониторинг.';
+        }
+    }
+
+    // Время по пределу скорости, затем округляем ВВЕРХ до 15 минут
     var minTimeMinutes = (mmolToInfuse / maxRate) * 60;
     var roundedTimeMinutes = Math.ceil(minTimeMinutes / 15) * 15;
     if (roundedTimeMinutes < 15) roundedTimeMinutes = 15;
@@ -3047,8 +3143,8 @@ window.calcKInfusion = function() {
 
     var timeStr = formatTime(roundedTimeMinutes);
 
-    // Скорость в мл/ч считаем по итоговому объёму (растворитель + концентрат)
-    var finalVolumeMl = volMl + requiredMlNum;
+    // Скорость в мл/ч считаем по полному объёму смеси
+    var finalVolumeMl = volMl + requiredMlNum + mgMlNum;
     var rateMlPerHour = Math.round(finalVolumeMl / (roundedTimeMinutes / 60));
 
     // Остаток дефицита — только ориентировочный
@@ -3062,7 +3158,14 @@ window.calcKInfusion = function() {
 
     // Текст для копирования
     var kValueForText = kValueRaw ? kValueRaw.replace('.', ',') : '';
-    var copyText = 'Учитывая результаты анализов крови (калий ' + kValueForText + ' ммоль/л), назначена инфузия калия: KCl ' + drugName + '% — ' + requiredMl + ' мл + NaCl 0,9% — ' + volMl + ' мл. В/в ч/з ' + accessText + ', не быстрее чем за ' + timeStr + '.';
+    var mgValueForText = mgValueRaw ? mgValueRaw.replace('.', ',') : '';
+
+    var copyText = '';
+    if (addMg && mgMlNum > 0) {
+        copyText = 'Учитывая результаты анализов крови (калий ' + kValueForText + ' ммоль/л, магний ' + mgValueForText + ' ммоль/л), назначена инфузия: KCl ' + drugName + '% — ' + requiredMl + ' мл + MgSO₄ 25% — ' + mgMlNum + ' мл + NaCl 0,9% — ' + volMl + ' мл. В/в ч/з ' + accessText + ', не быстрее чем за ' + timeStr + '.';
+    } else {
+        copyText = 'Учитывая результаты анализов крови (калий ' + kValueForText + ' ммоль/л), назначена инфузия калия: KCl ' + drugName + '% — ' + requiredMl + ' мл + NaCl 0,9% — ' + volMl + ' мл. В/в ч/з ' + accessText + ', не быстрее чем за ' + timeStr + '.';
+    }
 
     // Основная строка про остаток
     var remainderHtml = '';
@@ -3095,6 +3198,10 @@ window.calcKInfusion = function() {
         infusionWarnings.push('Требуется большой объём концентрата калия (>60 мл). Рассмотрите разделение на несколько последовательных инфузий.');
     }
 
+    if (mgWarningText) {
+        infusionWarnings.push(mgWarningText);
+    }
+
     var warningsHtml = '';
     if (infusionWarnings.length > 0) {
         warningsHtml = '<div class="k-note-box k-note-box--warning">';
@@ -3108,6 +3215,7 @@ window.calcKInfusion = function() {
     var resHtml =
       '<div class="k-builder__result">' +
         '<div class="k-builder__result-line">Добавить: <strong>' + requiredMl + ' мл</strong> (KCl ' + drugName + '%)</div>' +
+        mgLabelText +
         '<div class="k-builder__result-line">В раствор: <strong>' + volMl + ' мл</strong> (NaCl 0,9%)</div>' +
         '<div class="k-builder__result-time">Капать <strong>НЕ БЫСТРЕЕ</strong>, чем за <strong>' + timeStr + '</strong></div>' +
         '<div class="k-builder__meta">' +
@@ -3180,6 +3288,19 @@ function renderPotassiumModule() {
 
     var ivBlock = '';
     if (formulaDeficit !== null && formulaDeficit > 0) {
+      var magnesiumOptionBlock = '';
+
+      if (mg !== null && mg < 0.7) {
+        var mgDisplay = mg.toFixed(2).replace('.', ',');
+        magnesiumOptionBlock =
+          '<div class="k-builder__section">' +
+            '<span class="k-builder__label">Сопутствующая коррекция:</span>' +
+            '<div class="k-builder__options">' +
+              '<label class="k-builder__option"><input type="checkbox" id="k_add_mg" onchange="window.calcKInfusion()"> <span>Добавить MgSO₄ 25% (Mg ' + mgDisplay + ' ммоль/л)</span></label>' +
+            '</div>' +
+          '</div>';
+      }
+
       ivBlock =
         '<div class="k-builder">' +
           '<div class="k-builder__title">💡 Расчёт инфузии</div>' +
@@ -3215,6 +3336,8 @@ function renderPotassiumModule() {
               '<label class="k-builder__option"><input type="radio" name="k_acc" value="cvk" onchange="window.calcKInfusion()"> <span>ЦВК</span></label>' +
             '</div>' +
           '</div>' +
+
+          magnesiumOptionBlock +
 
           '<div id="k_calc_result"></div>' +
         '</div>';
