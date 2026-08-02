@@ -1399,3 +1399,274 @@ body.dark-theme .analysis-note {
     grid-column: span 2;
   }
 }
+
+/* ===== КОНСТРУКТОР ИНФУЗИИ КАЛИЯ ===== */
+
+.k-builder {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: #eaf4ff;
+  border: 1px solid #d4e7f7;
+  border-left: 3px solid #2980b9;
+  border-radius: 8px;
+  color: #1a5276;
+}
+
+.k-builder__title {
+  font-weight: 700;
+  margin-bottom: 8px;
+  font-size: 13.5px;
+}
+
+.k-builder__deficit {
+  font-size: 12.5px;
+  margin-bottom: 10px;
+}
+
+.k-builder__section {
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+
+.k-builder__label {
+  display: block;
+  margin-bottom: 4px;
+  color: #555;
+  font-weight: 600;
+}
+
+.k-builder__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.k-builder__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(41,128,185,0.12);
+}
+
+.k-builder__option input[type="radio"] {
+  margin: 0;
+  accent-color: #2980b9;
+}
+
+.k-builder__select {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #cbd8e6;
+  font-size: 12px;
+  cursor: pointer;
+  width: 100%;
+  max-width: 180px;
+  background: #fff;
+  color: #1a1a2e;
+}
+
+.k-builder__result {
+  background: rgba(255,255,255,0.92);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #b9d7ea;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.k-builder__result-line {
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: #1a1a2e;
+}
+
+.k-builder__result-time {
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #c0392b;
+  font-weight: 600;
+}
+
+.k-builder__meta {
+  font-size: 11.5px;
+  color: #444;
+  border-top: 1px solid #ddd;
+  padding-top: 6px;
+  line-height: 1.55;
+}
+
+.k-builder__copy-btn {
+  margin-top: 8px;
+  padding: 7px 10px;
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.2s;
+}
+
+.k-builder__copy-btn:hover {
+  background: #1e8449;
+}
+
+.k-builder__copy-btn.copied {
+  background: #1e8449;
+}
+
+.k-note-box {
+  margin-top: 8px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.k-note-box__title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.k-note-box--primary {
+  background: #f0f7ff;
+  border-left: 3px solid #2980b9;
+}
+
+.k-note-box--secondary {
+  background: #f7f9fc;
+  border-left: 3px solid #8e44ad;
+}
+
+.k-note-box--warning {
+  background: #fffbf0;
+  border-left: 3px solid #e67e22;
+}
+
+.k-note-box--plain {
+  background: #f8fafc;
+  border: 1px solid #e1e8ef;
+}
+
+.k-urgent-box {
+  font-size: 12px;
+  line-height: 1.6;
+  background: #fdf2f1;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #c0392b;
+}
+
+.k-urgent-box__title {
+  font-weight: 700;
+  color: #922b21;
+  margin-bottom: 6px;
+}
+
+.k-urgent-box__item {
+  margin-bottom: 4px;
+}
+
+.k-inline-help {
+  text-decoration: underline;
+  cursor: help;
+}
+
+/* ===== ТЁМНАЯ ТЕМА: КОНСТРУКТОР КАЛИЯ ===== */
+
+body.dark-theme .k-builder {
+  background: #0f1923;
+  border-color: #213345;
+  border-left-color: #58a6ff;
+  color: #c9d1d9;
+}
+
+body.dark-theme .k-builder__label {
+  color: #8b949e;
+}
+
+body.dark-theme .k-builder__option {
+  background: rgba(255,255,255,0.04);
+  border-color: #2d3c4a;
+  color: #e6edf3;
+}
+
+body.dark-theme .k-builder__option input[type="radio"] {
+  accent-color: #58a6ff;
+}
+
+body.dark-theme .k-builder__select {
+  background: #0d1117;
+  color: #e6edf3;
+  border-color: #30363d;
+}
+
+body.dark-theme .k-builder__result {
+  background: #161b22;
+  border-color: #30363d;
+  box-shadow: none;
+}
+
+body.dark-theme .k-builder__result-line {
+  color: #e6edf3;
+}
+
+body.dark-theme .k-builder__result-time {
+  color: #ff7b72;
+}
+
+body.dark-theme .k-builder__meta {
+  color: #8b949e;
+  border-top-color: #30363d;
+}
+
+body.dark-theme .k-builder__copy-btn {
+  background: #238636;
+}
+
+body.dark-theme .k-builder__copy-btn:hover {
+  background: #2ea043;
+}
+
+body.dark-theme .k-builder__copy-btn.copied {
+  background: #2ea043;
+}
+
+body.dark-theme .k-note-box--primary {
+  background: #0f1923;
+  border-left-color: #58a6ff;
+  color: #c9d1d9;
+}
+
+body.dark-theme .k-note-box--secondary {
+  background: #1b1625;
+  border-left-color: #8e44ad;
+  color: #c9d1d9;
+}
+
+body.dark-theme .k-note-box--warning {
+  background: #2a2010;
+  border-left-color: #e3b341;
+  color: #e6edf3;
+}
+
+body.dark-theme .k-note-box--plain {
+  background: #1c2128;
+  border-color: #30363d;
+  color: #e6edf3;
+}
+
+body.dark-theme .k-urgent-box {
+  background: #2a1515;
+  border-color: #f85149;
+  color: #e6edf3;
+}
+
+body.dark-theme .k-urgent-box__title {
+  color: #ff7b72;
+}
