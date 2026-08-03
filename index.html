@@ -15,6 +15,7 @@
   <span>❤️ МедикСчёт — калькулятор кардиолога</span>
   <div style="display: flex; align-items: center; gap: 8px;">
     <button id="themeToggle" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;padding:4px 10px;border-radius:6px;transition: background 0.2s;" title="Переключить тему">🌓</button>
+    <button id="helpOpenBtn" style="background:none;border:none;color:white;font-size:16px;cursor:pointer;padding:4px 10px;border-radius:6px;transition: background 0.2s;" title="Инструкция">❓ Инструкция</button>
     <div style="position: relative;">
       <button id="demoToggle" style="background:none;border:none;color:white;font-size:16px;cursor:pointer;padding:4px 10px;border-radius:6px;transition: background 0.2s;" title="Демонстрационные сценарии">🧪 Демо</button>
       <div id="demoDropdown" style="display:none; position:absolute; right:0; top:100%; margin-top:4px; background:white; border:1px solid #e0e0e0; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:1001; min-width:160px; overflow:hidden;">
@@ -1024,8 +1025,23 @@
     <button class="disclaimer-accept-btn" onclick="acceptDisclaimer()">Я понимаю и принимаю</button>
   </div>
 </div>
+
+<!-- ===== ИНСТРУКЦИЯ — МОДАЛЬНОЕ ОКНО ===== -->
+<div id="helpOverlay" class="help-overlay" style="display:none;">
+  <div class="help-modal">
+    <div class="help-modal-header">
+      <span class="help-modal-title">📖 Инструкция</span>
+      <button type="button" class="help-close-btn" id="helpCloseBtn" title="Закрыть">✕</button>
+    </div>
+    <div class="help-modal-body">
+      <div class="help-nav" id="helpNav"></div>
+      <div class="help-content" id="helpContent"></div>
+    </div>
+  </div>
+</div>
 <script src="core.js"></script>
 <script src="scales.js"></script>
 <script src="analysis.js"></script>
+<script src="help.js"></script>
 </body>
 </html>

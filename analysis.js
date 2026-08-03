@@ -164,9 +164,9 @@ function applyParsedData(parsedItems) {
     var parentGroup = input.closest('.input-group');
     if (parentGroup) {
       parentGroup.classList.add('emr-filled');
-      input.addEventListener('input', function removeMarker() {
-        parentGroup.classList.remove('emr-filled');
-        input.removeEventListener('input', removeMarker);
+      input.addEventListener('input', function removeMarker(e) {
+        var group = e.target.closest('.input-group');
+        if (group) group.classList.remove('emr-filled');
       }, { once: true });
     }
 
@@ -966,5 +966,9 @@ document.addEventListener('DOMContentLoaded', function() {
   updateGroupButtonsUI();
   updateAnalysisPanel();
   updateNavButtons();
+
+  // --- Чистое стартовое состояние Undo: сбрасываем стек и таймер,
+  //     сохраняем ровно 1 базовое состояние (счётчик отмен = 0) ---
+  resetUndoBaseState();
 
 });

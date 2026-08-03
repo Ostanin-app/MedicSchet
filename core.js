@@ -194,6 +194,18 @@ function scheduleUndo() {
   }, 800);
 }
 
+// Полный сброс Undo к чистому базовому состоянию:
+// очищает стек, гасит отложенный таймер и сохраняет ровно 1 базовое состояние.
+function resetUndoBaseState() {
+  if (undoDebounceTimer) {
+    clearTimeout(undoDebounceTimer);
+    undoDebounceTimer = null;
+  }
+  skipUndo = false;
+  undoStack = [];
+  saveUndoState();
+}
+
 document.addEventListener('keydown', function(e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
     var activeEl = document.activeElement;
@@ -684,6 +696,7 @@ function initSexToggle() {
         setActive(clickedVal);
       }
       autofill();
+      if (typeof updateAnalysisPanel === 'function') updateAnalysisPanel();
     });
   });
 
