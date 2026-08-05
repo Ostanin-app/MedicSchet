@@ -32,6 +32,7 @@
   --text-2: #4b5163;
   --muted: #6b7280;
   --faint: #767d92;
+  --placeholder: #8a91a6;
 
   /* Фирменный цвет (индиго) */
   --primary: #5457d6;
@@ -83,6 +84,7 @@ html { -webkit-text-size-adjust: 100%; }
 body {
   font-family: var(--font);
   color: var(--text);
+  color-scheme: light;
   font-size: 15px;
   line-height: 1.55;
   background: var(--bg);
@@ -264,8 +266,20 @@ header > span, header > div { position: relative; z-index: 1; }
   outline: none;
   transition: border-color .15s, box-shadow .15s;
 }
-#emrPaste::placeholder { color: var(--faint); }
+/* Плейсхолдеры — бледнее введённых значений, чтобы не путать */
+.input-group input::placeholder,
+.input-group select::placeholder,
+.scale-select-group select::placeholder,
+#emrPaste::placeholder {
+  color: var(--placeholder);
+}
 #emrPaste:focus { border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(84,87,214,.14); }
+
+/* Варианты раскрывающихся списков — из палитры темы (не системные белые) */
+select option {
+  background-color: var(--surface);
+  color: var(--text);
+}
 
 /* ------------------------------------------------------------
    6. ЧЕКБОКСЫ (общие "сопутствующие заболевания")
@@ -1093,6 +1107,7 @@ header > span, header > div { position: relative; z-index: 1; }
    «космос», а спокойный минимализм.
    ------------------------------------------------------------ */
 body.dark-theme {
+  color-scheme: dark;
   /* НЕ чистый чёрный, а иссиня-чёрный с мягким сине-серым оттенком
      (принцип: чистый #000 + чисто-белый текст утомляют глаза).
      Фон сделан заметно темнее поверхностей, чтобы блоки читались
@@ -1111,6 +1126,7 @@ body.dark-theme {
   --text-2: #c2c6cf;
   --muted: #969ba6;
   --faint: #79808d;
+  --placeholder: #858a99;
 
   /* Акцент осветлён в тёмной теме (принцип: делаем акцент «глянцевее»
      и светлее, чтобы он выделялся на тёмном фоне) */
@@ -1228,7 +1244,7 @@ body.dark-theme .scale-select-group select {
   color: var(--text);
 }
 body.dark-theme .input-group input::placeholder,
-body.dark-theme .input-group select::placeholder { color: var(--faint); }
+body.dark-theme .input-group select::placeholder { color: var(--placeholder); }
 body.dark-theme .input-group input:hover,
 body.dark-theme .input-group select:hover { border-color: rgba(255,255,255,.26); }
 body.dark-theme .input-group input:focus,
@@ -1251,7 +1267,7 @@ body.dark-theme #emrPaste {
   color: var(--text) !important;
   caret-color: var(--primary);
 }
-body.dark-theme #emrPaste::placeholder { color: var(--faint); }
+body.dark-theme #emrPaste::placeholder { color: var(--placeholder); }
 body.dark-theme #emrPaste:focus { border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(138,138,247,.2); }
 
 /* --- Чекбоксы --- */
@@ -1351,7 +1367,7 @@ body.dark-theme .arc-summary .arc-num { background: rgba(255,255,255,.03); borde
 body.dark-theme .arc-summary .arc-num .lbl { color: var(--muted); }
 
 /* --- Блок копирования --- */
-body.dark-theme .copy-block { background: #0d0d0f; color: #c9c9d0; border: 1px solid var(--border); }
+body.dark-theme .copy-block { background: #12141a; color: #c9c9d0; border: 1px solid var(--border-strong); box-shadow: inset 0 1px 3px rgba(0,0,0,.4); }
 
 /* --- Тултип --- */
 body.dark-theme #customTooltip { background: #1d1d22; border-color: #33333a; box-shadow: var(--shadow-3); }
@@ -1558,3 +1574,61 @@ body.dark-theme .sidebar-left::-webkit-scrollbar-thumb { background: rgba(255,25
 #clearEmrBtn { margin-left: auto; background: none; border: none; color: inherit; cursor: pointer; font-size: 16px; padding: 4px 6px; }
 #emrStatus { margin-top: 8px; font-size: 13px; color: var(--green); }
 .disclaimer-version a { color: var(--primary); }
+
+/* ============================================================
+   КАСТОМНЫЕ РАСКРЫВАЮЩИЕСЯ СПИСКИ (вместо системных select)
+   ============================================================ */
+.custom-select {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.custom-select__btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  padding: 8px 12px;
+  font-size: 13.5px;
+  font-family: var(--font);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color .15s, box-shadow .15s;
+}
+.custom-select__btn:hover { border-color: var(--border-strong); }
+.custom-select__btn.open,
+.custom-select__btn:focus-visible {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(84,87,214,.14);
+  outline: none;
+}
+.custom-select__arrow { font-size: 11px; color: var(--muted); transition: transform .15s; }
+.custom-select__btn.open .custom-select__arrow { transform: rotate(180deg); }
+.custom-select__list {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 1200;
+  background: var(--surface);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 10px;
+  box-shadow: var(--shadow-2);
+  overflow-y: auto;
+  max-height: 240px;
+}
+.custom-select__item {
+  padding: 9px 12px;
+  font-size: 13.5px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .12s;
+}
+.custom-select__item:hover { background: var(--primary-soft); }
+.custom-select__item.active { background: var(--primary-soft); color: var(--primary-2); font-weight: 600; }

@@ -363,7 +363,7 @@ function resetAllFields() {
   var emrStatus = document.getElementById('emrStatus');
   if (emrStatus) {
     emrStatus.textContent = '⏳ Вставьте текст из ЭМК...';
-    emrStatus.style.color = '#888';
+    emrStatus.style.color = 'var(--muted)';
   }
 
   document.querySelectorAll('.emr-filled').forEach(function(el) {
@@ -464,6 +464,7 @@ function fillDemo(scenario) {
   updateGroupButtonsUI();
   autofill();
   updateAnalysisPanel();
+  syncCustomSelects();
 
   skipUndo = false;
 
@@ -873,3 +874,110 @@ window.copyKInfusion = function(btn) {
     showCopiedState();
   });
 };
+
+// ===================================================
+//  КАСТОМНЫЕ РАСКРЫВАЮЩИЕСЯ СПИСКИ
+//  Системные <select> в тёмной теме рисуют белую рамку и белое
+//  выделение. Оборачиваем нативный select в свой виджет: нативный
+//  элемент остаётся в DOM скрытым (с ним работают все скрипты —
+//  читают .value и слушают события), а виджет только меняет его
+//  значение и шлёт события input/change.
+// ===================================================
+function initCustomSelect(selectEl) {
+  if (!selectEl || selectEl.dataset.customSelect === '1') return;
+  selectEl.dataset.customSelect = '1';
+
+  var wrapper = document.createElement('div');
+  wrapper.className = 'custom-select';
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'custom-select__btn';
+  btn.innerHTML = '<span class="custom-select__value"></span><span class="custom-select__arrow">▾</span>';
+
+  var list = document.createElement('div');
+  list.className = 'custom-select__list';
+
+  function buildList() {
+    list.innerHTML = '';
+    for (var i = 0; i < selectEl.options.length; i++) {
+      (function(opt, idx) {
+        var item = document.createElement('div');
+        item.className = 'custom-select__item';
+        item.textContent = opt.text;
+        item.dataset.index = idx;
+        item.addEventListener('click', function() {
+          selectEl.value = opt.value;
+          selectEl.dispatchEvent(new Event('input', { bubbles: true }));
+          selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+          syncLabel();
+          closeList();
+        });
+        list.appendChild(item);
+      })(selectEl.options[i], i);
+    }
+  }
+
+  function syncLabel() {
+    var idx = selectEl.selectedIndex;
+    btn.querySelector('.custom-select__value').textContent =
+      selectEl.options[idx] ? selectEl.options[idx].text : '';
+    var items = list.querySelectorAll('.custom-select__item');
+    for (var j = 0; j < items.length; j++) {
+      items[j].classList.toggle('active', items[j].dataset.index == idx);
+    }
+  }
+
+  function openList() {
+    list.style.display = 'block';
+    btn.classList.add('open');
+    document.addEventListener('click', outsideClose);
+  }
+
+  function closeList() {
+    list.style.display = 'none';
+    btn.classList.remove('open');
+    document.removeEventListener('click', outsideClose);
+  }
+
+  function outsideClose(e) {
+    if (!wrapper.contains(e.target)) closeList();
+  }
+
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (list.style.display === 'block') closeList(); else openList();
+  });
+
+  // Если значение изменили программно (например, демо-сценарий)
+  selectEl.addEventListener('change', syncLabel);
+
+  buildList();
+  syncLabel();
+
+  // Нативный select прячем визуально, но оставляем в DOM
+  selectEl.style.position = 'absolute';
+  selectEl.style.opacity = '0';
+  selectEl.style.pointerEvents = 'none';
+  selectEl.style.width = '1px';
+  selectEl.style.height = '1px';
+
+  wrapper.appendChild(btn);
+  wrapper.appendChild(list);
+  selectEl.parentNode.insertBefore(wrapper, selectEl.nextSibling);
+}
+
+// Синхронизация подписей всех виджетов с их нативными select
+// (нужно после программных изменений значений, например, демо)
+function syncCustomSelects() {
+  document.querySelectorAll('select[data-custom-select="1"]').forEach(function(s) {
+    var w = s.parentNode.querySelector('.custom-select');
+    if (!w) return;
+    var idx = s.selectedIndex;
+    var valueEl = w.querySelector('.custom-select__value');
+    if (valueEl) valueEl.textContent = s.options[idx] ? s.options[idx].text : '';
+    w.querySelectorAll('.custom-select__item').forEach(function(it) {
+      it.classList.toggle('active', it.dataset.index == idx);
+    });
+  });
+}

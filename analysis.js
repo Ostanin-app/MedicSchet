@@ -833,6 +833,7 @@ function updateAnalysisPanel() {
   }
 
   modulesContainer.innerHTML = modules.join('');
+  initCustomSelect(document.getElementById('k_vol'));
   panel.style.display = 'block';
 }
 
@@ -855,6 +856,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // --- Инициализация Undo ---
   initUndoTracking();
+
+  // --- Кастомные раскрывающиеся списки (тёмная тема) ---
+  initCustomSelect(document.getElementById('grace_killip'));
 
   // --- Кнопка темы ---
   var themeBtn = document.getElementById('themeToggle');
