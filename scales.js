@@ -1078,7 +1078,7 @@ function calculate() {
       var workingMethodRu    = 'фактический вес';
       var categoryText       = 'Дефицит массы тела';
       var methodNote         = 'Рабочий КлКр рассчитан по фактическому весу (Winter, 2012).';
-      var methodBlockStyle   = 'margin-top:8px;padding:8px 10px;background:#f0fff4;border-left:3px solid #27ae60;border-radius:0 6px 6px 0;font-size:12px;line-height:1.5;';
+      var methodBlockStyle   = 'margin-top:8px;padding:8px 10px;background:var(--green-soft);border-left:3px solid var(--green);border-radius:0 6px 6px 0;font-size:12px;line-height:1.5;';
       var brownLower = null;
       var brownUpper = null;
 
@@ -1087,24 +1087,24 @@ function calculate() {
           workingCrcl = cgCrclTbw; workingMethodLabel = 'TBW'; workingMethodRu = 'фактический вес';
           categoryText = 'Дефицит массы тела';
           methodNote = 'Рабочий КлКр рассчитан по фактическому весу (Winter, 2012).';
-          methodBlockStyle = 'margin-top:8px;padding:8px 10px;background:#f0fff4;border-left:3px solid #27ae60;border-radius:0 6px 6px 0;font-size:12px;line-height:1.5;';
+          methodBlockStyle = 'margin-top:8px;padding:8px 10px;background:var(--green-soft);border-left:3px solid var(--green);border-radius:0 6px 6px 0;font-size:12px;line-height:1.5;';
         } else if (bmi < 25) {
           workingCrcl = cgCrclIbw; workingMethodLabel = 'IBW'; workingMethodRu = 'идеальный вес';
           categoryText = 'Нормальная масса тела';
           methodNote = 'Рабочий КлКр рассчитан по идеальному весу (Winter, 2012).';
-          methodBlockStyle = 'margin-top:8px;padding:8px 10px;background:#f0fff4;border-left:3px solid #27ae60;border-radius:0 6px 6px 0;font-size:12px;line-height:1.5;';
+          methodBlockStyle = 'margin-top:8px;padding:8px 10px;background:var(--green-soft);border-left:3px solid var(--green);border-radius:0 6px 6px 0;font-size:12px;line-height:1.5;';
         } else if (bmi < 30) {
           if (cgCrclAbw !== null) { workingCrcl = cgCrclAbw; workingMethodLabel = 'ABW 0.4'; workingMethodRu = 'скорректированный вес'; }
           else { workingCrcl = cgCrclIbw; workingMethodLabel = 'IBW'; workingMethodRu = 'идеальный вес'; }
           categoryText = 'Избыточная масса тела';
           methodNote = 'КлКр по фактическому весу может быть завышен. ABW 0.4 — наименее смещённая оценка по Winter (2012).';
-          methodBlockStyle = 'margin-top:8px;padding:8px 10px;background:#fffaf0;border-left:3px solid #e67e22;border-radius:0 6px 6px 0;font-size:12px;line-height:1.5;';
+          methodBlockStyle = 'margin-top:8px;padding:8px 10px;background:var(--orange-soft);border-left:3px solid var(--orange);border-radius:0 6px 6px 0;font-size:12px;line-height:1.5;';
         } else {
           if (cgCrclAbw !== null) { workingCrcl = cgCrclAbw; workingMethodLabel = 'ABW 0.4'; workingMethodRu = 'скорректированный вес'; }
           else { workingCrcl = cgCrclIbw; workingMethodLabel = 'IBW'; workingMethodRu = 'идеальный вес'; }
           categoryText = 'Ожирение';
           methodNote = 'КлКр по фактическому весу может значительно завышать функцию почек. ABW 0.4 — наименее смещённая оценка по Winter (2012), но остаётся приблизительной.';
-          methodBlockStyle = 'margin-top:8px;padding:8px 10px;background:#fdf2f1;border-left:3px solid #c0392b;border-radius:0 6px 6px 0;font-size:12px;line-height:1.5;';
+          methodBlockStyle = 'margin-top:8px;padding:8px 10px;background:var(--red-soft);border-left:3px solid var(--red);border-radius:0 6px 6px 0;font-size:12px;line-height:1.5;';
         }
       }
 
@@ -1229,8 +1229,8 @@ function calculate() {
       '<div style="margin-bottom:6px;font-size:13px;">' +
         '<span style="font-weight:600;">6‑месячная смертность (GRACE 2.0):</span> ' + grace2_6m.toFixed(1) + '%' +
       '</div>' +
-      '<div style="margin-top:8px;font-size:12px;color:#1a5276;">' +
-        'ИИ калькулятор <a href="https://www.grace-3.com/" target="_blank" style="color:#2980b9;font-weight:600;text-decoration:none;">GRACE 3.0</a>' +
+      '<div style="margin-top:8px;font-size:12px;color:var(--text-2);">' +
+        'ИИ калькулятор <a href="https://www.grace-3.com/" target="_blank" style="color:var(--primary);font-weight:600;text-decoration:none;">GRACE 3.0</a>' +
       '</div>';
 
     var graceHint = gRisk === 'low'
@@ -1293,7 +1293,7 @@ function calculate() {
       '<div class="arc-summary">' +
         '<div class="arc-num"><div class="n">' + arc.major + '</div><div class="lbl">Больших</div></div>' +
         '<div class="arc-num"><div class="n">' + arc.minor + '</div><div class="lbl">Малых</div></div>' +
-        '<div style="font-size:12px;color:#666;align-self:center;">Критерий HBR:<br>≥1 большого ИЛИ ≥2 малых</div>' +
+        '<div style="font-size:12px;color:var(--muted);align-self:center;">Критерий HBR:<br>≥1 большого ИЛИ ≥2 малых</div>' +
       '</div>',
       arc.isHBR
         ? 'Рассмотреть сокращение ДАТТ (1–3 мес. при плановом ЧКВ, 3–6 мес. при ОКС) или деэскалацию. Обязательно назначение ИПП.'

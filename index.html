@@ -6,6 +6,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>МедикСчёт — калькулятор кардиолога</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -14,14 +17,14 @@
 <header style="display: flex; justify-content: space-between; align-items: center;">
   <span>❤️ МедикСчёт — калькулятор кардиолога</span>
   <div style="display: flex; align-items: center; gap: 8px;">
-    <button id="themeToggle" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;padding:4px 10px;border-radius:6px;transition: background 0.2s;" title="Переключить тему">🌓</button>
-    <button id="helpOpenBtn" style="background:none;border:none;color:white;font-size:16px;cursor:pointer;padding:4px 10px;border-radius:6px;transition: background 0.2s;" title="Инструкция">❓ Инструкция</button>
+    <button id="themeToggle" title="Переключить тему">🌓</button>
+    <button id="helpOpenBtn" title="Инструкция">❓ Инструкция</button>
     <div style="position: relative;">
-      <button id="demoToggle" style="background:none;border:none;color:white;font-size:16px;cursor:pointer;padding:4px 10px;border-radius:6px;transition: background 0.2s;" title="Демонстрационные сценарии">🧪 Демо</button>
-      <div id="demoDropdown" style="display:none; position:absolute; right:0; top:100%; margin-top:4px; background:white; border:1px solid #e0e0e0; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:1001; min-width:160px; overflow:hidden;">
-        <div class="demo-item" data-demo="acs" style="padding:10px 16px; cursor:pointer; font-size:14px; color:#1a1a2e; transition: background 0.15s;">ОКС</div>
-        <div class="demo-item" data-demo="afib" style="padding:10px 16px; cursor:pointer; font-size:14px; color:#1a1a2e; transition: background 0.15s;">ФП</div>
-        <div class="demo-item" data-demo="pe" style="padding:10px 16px; cursor:pointer; font-size:14px; color:#1a1a2e; transition: background 0.15s;">ТЭЛА</div>
+      <button id="demoToggle" title="Демонстрационные сценарии">🧪 Демо</button>
+      <div id="demoDropdown" style="display:none;">
+        <div class="demo-item" data-demo="acs">ОКС</div>
+        <div class="demo-item" data-demo="afib">ФП</div>
+        <div class="demo-item" data-demo="pe">ТЭЛА</div>
       </div>
     </div>
   </div>
@@ -133,11 +136,11 @@
     <div class="card-header">
       📥 Быстрый ввод из ЭМК
       <span class="badge">вставьте таблицу или текст из Промед — данные заполнятся автоматически</span>
-      <button id="clearEmrBtn" style="margin-left:auto;background:none;border:none;color:white;cursor:pointer;font-size:16px;" title="Очистить поле">🗑️</button>
+      <button id="clearEmrBtn" title="Очистить поле">🗑️</button>
     </div>
     <div class="card-body">
-      <textarea id="emrPaste" rows="3" placeholder="Вставьте скопированный текст или таблицу анализов из Промед (Ctrl+V)..." style="width:100%;border:2px solid #e0e0e0;border-radius:7px;padding:10px;font-size:14px;resize:vertical;font-family:inherit;"></textarea>
-      <div id="emrStatus" style="margin-top:8px;font-size:13px;color:#27ae60;">⏳ Вставьте текст из ЭМК...</div>
+      <textarea id="emrPaste" rows="3" placeholder="Вставьте скопированный текст или таблицу анализов из Промед (Ctrl+V)..."></textarea>
+      <div id="emrStatus"⏳ Вставьте текст из ЭМК...</div>
     </div>
   </div>
 
@@ -299,7 +302,7 @@
   <div class="scale-block" id="block_crusade">
     <div class="scale-block-header">🩸 CRUSADE — риск внутрибольничного кровотечения при ОКС</div>
     <div class="scale-block-body">
-      <p style="font-size:13px;color:#888;margin-bottom:10px;">Большинство данных подтягивается автоматически из общих полей. Отметьте дополнительные пункты ниже.</p>
+      <p class="scale-note">Большинство данных подтягивается автоматически из общих полей. Отметьте дополнительные пункты ниже.</p>
       <div class="scale-cb-grid">
         <label class="scale-cb-item auto-cb" id="crusade_auto_sex_row" style="display:none;">
           <input type="checkbox" id="crusade_female" disabled>
@@ -512,7 +515,7 @@
   <div class="scale-block" id="block_cha2ds2">
     <div class="scale-block-header">💓 CHA₂DS₂-VASc — риск инсульта при ФП</div>
     <div class="scale-block-body">
-      <p style="font-size:13px;color:#888;margin-bottom:10px;">Большинство пунктов подтягивается из общих данных автоматически.</p>
+      <p class="scale-note">Большинство пунктов подтягивается из общих данных автоматически.</p>
       <div class="scale-cb-grid">
 
         <label class="scale-cb-item auto-cb">
@@ -749,7 +752,7 @@
   <div class="scale-block" id="block_pesi">
     <div class="scale-block-header">🩺 PESI / sPESI — прогноз при ТЭЛА</div>
     <div class="scale-block-body">
-      <p style="font-size:13px;color:#888;margin-bottom:10px;">Поля, отмеченные <span class="auto-tag">авто</span>, подтягиваются из общих данных.</p>
+      <p class="scale-note">Поля, отмеченные <span class="auto-tag">авто</span>, подтягиваются из общих данных.</p>
 
       <div class="input-grid" style="margin-bottom:12px;">
         <div class="input-group">
@@ -799,7 +802,7 @@
   <div class="scale-block" id="block_wells">
     <div class="scale-block-header">🫁 Шкала Wells — клиническая вероятность ТЭЛА</div>
     <div class="scale-block-body">
-      <p style="font-size:13px;color:#888;margin-bottom:10px;">Оцените клиническую вероятность ТЭЛА. ЧСС подтягивается автоматически из общих данных.</p>
+      <p class="scale-note">Оцените клиническую вероятность ТЭЛА. ЧСС подтягивается автоматически из общих данных.</p>
 
       <div class="scale-cb-grid">
 
@@ -862,7 +865,7 @@
   <div class="scale-block" id="block_geneva">
     <div class="scale-block-header">🫁 Пересмотренная Женевская шкала — клиническая вероятность ТЭЛА</div>
     <div class="scale-block-body">
-      <p style="font-size:13px;color:#888;margin-bottom:10px;">Возраст и ЧСС подтягиваются автоматически из общих данных.</p>
+      <p class="scale-note">Возраст и ЧСС подтягиваются автоматически из общих данных.</p>
 
       <div class="section-label">Факторы риска</div>
       <div class="scale-cb-grid">
@@ -976,7 +979,7 @@
     <p>Расчёты основаны на опубликованных клинических шкалах и номограммах (GRACE, CRUSADE, HAS-BLED, CHA₂DS₂-VASc, Caprini, PESI/sPESI, CKD-EPI, Кокрофт-Голт, ARC-HBR). Однако результаты расчётов <strong>не являются диагнозом</strong> и <strong>не заменяют клиническое суждение врача</strong>.</p>
     <p>Калькулятор <strong>не учитывает</strong> индивидуальные особенности пациента, сопутствующие заболевания, взаимодействие лекарственных средств и другие факторы, которые могут влиять на клиническое решение.</p>
     <p><strong>За клинические решения, принятые на основе данных калькулятора, ответственность несёт лечащий врач.</strong></p>
-    <div class="disclaimer-version">По вопросам и предложениям пишите на почту: <a href="mailto:feedback@doc-apps.ru" style="color:#2980b9;">feedback@doc-apps.ru</a></div>
+    <div class="disclaimer-version">По вопросам и предложениям пишите на почту: <a href="mailto:feedback@doc-apps.ru">feedback@doc-apps.ru</a></div>
   </div>
 
   <!-- ===== БЛОК «ПОДДЕРЖАТЬ РАЗРАБОТЧИКА» ===== -->
@@ -997,7 +1000,7 @@
 </div>
 
 <!-- Кастомный тултип -->
-<div id="customTooltip" style="position: fixed; background: #1a1a2e; color: white; padding: 8px 12px; border-radius: 8px; font-size: 13px; line-height: 1.45; max-width: 380px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); pointer-events: none; z-index: 9999; opacity: 0; transition: opacity 0.15s; white-space: pre-line; word-wrap: break-word; display: none;"></div>
+<div id="customTooltip"></div>
 
 <!-- Плавающая кнопка "Рассчитать шкалы" -->
 <button class="floating-calc" onclick="calculate()">⚡ РАССЧИТАТЬ ШКАЛЫ</button>

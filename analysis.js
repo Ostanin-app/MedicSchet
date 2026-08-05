@@ -205,7 +205,7 @@ function handleEmrPaste() {
 
   if (!text || text.length < 5) {
     statusEl.textContent = '⏳ Вставьте текст из ЭМК...';
-    statusEl.style.color = '#888';
+    statusEl.style.color = 'var(--muted)';
     return;
   }
 
@@ -215,7 +215,7 @@ function handleEmrPaste() {
 
   if (parsed.length === 0) {
     statusEl.textContent = '❌ Данные не распознаны. Проверьте формат или заполните вручную.';
-    statusEl.style.color = '#c0392b';
+    statusEl.style.color = 'var(--red)';
     return;
   }
 
@@ -228,18 +228,18 @@ function handleEmrPaste() {
   var statusMsg = '';
   if (applied.length > 0) {
     statusMsg = '✅ Заполнено: ' + applied.join(', ') + '. ';
-    statusEl.style.color = '#27ae60';
+    statusEl.style.color = 'var(--green)';
   }
   if (skipped.length > 0) {
     statusMsg += '⚠️ Пропущено (уже заполнены): ' + skipped.join(', ') + '. ';
-    statusEl.style.color = '#e67e22';
+    statusEl.style.color = 'var(--orange)';
   }
   if (ignoredCount > 0) {
     statusMsg += 'ℹ️ Проигнорировано показателей: ' + ignoredCount + '.';
   }
   if (applied.length === 0 && skipped.length === 0) {
     statusMsg = '❌ Данные не распознаны. Проверьте формат или заполните вручную.';
-    statusEl.style.color = '#c0392b';
+    statusEl.style.color = 'var(--red)';
   }
 
   statusEl.textContent = statusMsg;
@@ -720,7 +720,7 @@ function renderSodiumCorrectionModule() {
       interp = 'Псевдогипонатриемия';
       detailsExtra =
         '<div style="margin-bottom:6px;">Снижение натрия на бумаге обусловлено сдвигом воды из-за гипергликемии. Истинный уровень натрия находится в пределах нормы.</div>' +
-        '<div style="padding:6px 8px;background:#fffbf0;border-left:3px solid #e67e22;border-radius:0 4px 4px 0;font-size:11.5px;">❗️ <strong>Важно:</strong> введение гипертонического натрия в этой ситуации противопоказано.</div>';
+        '<div style="padding:6px 8px;background:var(--orange-soft);border-left:3px solid var(--orange);border-radius:0 4px 4px 0;font-size:11.5px;">❗️ <strong>Важно:</strong> введение гипертонического натрия в этой ситуации противопоказано.</div>';
     } else if (measuredNa <= 145 && trueNa > 145) {
       detailsExtra = '<div style="margin-bottom:6px;">Истинный уровень натрия выше измеренного. Гипергликемия маскирует гипернатриемию (вероятна дегидратация).</div>';
     } else if (trueNa < 135) {
@@ -910,7 +910,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (emrTextarea) {
         emrTextarea.value = '';
         statusEl.textContent = '⏳ Вставьте текст из ЭМК...';
-        statusEl.style.color = '#888';
+        statusEl.style.color = 'var(--muted)';
       }
     });
   }

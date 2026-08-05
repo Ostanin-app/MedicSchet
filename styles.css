@@ -1,5 +1,5 @@
 /* ============================================================
-   МедикСчёт — калькулятор кардиолога
+   МедикСчёт  1�7 калькулятор кардиолога
    НОВЫЙ ДИЗАЙН (полностью переработан)
    ------------------------------------------------------------
    ВАЖНО: все имена классов и id сохранены прежними,
@@ -31,7 +31,7 @@
   --text: #1f2333;
   --text-2: #4b5163;
   --muted: #6b7280;
-  --faint: #98a0b3;
+  --faint: #767d92;
 
   /* Фирменный цвет (индиго) */
   --primary: #5457d6;
@@ -330,7 +330,7 @@ header > span, header > div { position: relative; z-index: 1; }
   color: var(--primary-2);
   box-shadow: inset 0 0 0 1px rgba(84,87,214,.2);
 }
-.scale-toggle.active::before { content: "✓"; font-weight: 800; }
+.scale-toggle.active::before { content: "✄1�7"; font-weight: 800; }
 
 /* ------------------------------------------------------------
    8. БЛОКИ ШКАЛ
@@ -409,7 +409,7 @@ header > span, header > div { position: relative; z-index: 1; }
 .scale-cb-text { display: flex; flex-direction: column; gap: 2px; color: var(--text); font-weight: 600; }
 .scale-cb-hint { font-size: 11.5px; color: var(--muted); line-height: 1.4; font-weight: 400; }
 
-/* Пометка «авто» — общий вид (работает и в чекбоксах, и в пояснениях) */
+/* Пометка «авто»  1�7 общий вид (работает и в чекбоксах, и в пояснениях) */
 .auto-tag {
   font-size: 9.5px;
   color: var(--orange-deep);
@@ -658,7 +658,7 @@ header > span, header > div { position: relative; z-index: 1; }
   background: linear-gradient(180deg, var(--green-soft), var(--surface) 42%);
 }
 .result-card.risk-low .result-card-header { color: var(--green-deep); background: rgba(31,157,99,.08); }
-.result-card.risk-low .result-card-header::before { content: "●"; font-size: 12px; }
+.result-card.risk-low .result-card-header::before { content: "◄1�7"; font-size: 12px; }
 .result-card.risk-low .result-value, .result-card.risk-low .result-interp { color: var(--green-deep); }
 .result-card.risk-low .result-hint { background: var(--green-soft); border-left-color: var(--green); color: var(--green-deep); }
 
@@ -667,7 +667,7 @@ header > span, header > div { position: relative; z-index: 1; }
   background: linear-gradient(180deg, var(--orange-soft), var(--surface) 42%);
 }
 .result-card.risk-moderate .result-card-header { color: var(--orange-deep); background: rgba(229,142,27,.1); }
-.result-card.risk-moderate .result-card-header::before { content: "▲"; font-size: 11px; }
+.result-card.risk-moderate .result-card-header::before { content: "▄1�7"; font-size: 11px; }
 .result-card.risk-moderate .result-value, .result-card.risk-moderate .result-interp { color: var(--orange-deep); }
 .result-card.risk-moderate .result-hint { background: var(--orange-soft); border-left-color: var(--orange); color: var(--orange-deep); }
 
@@ -685,7 +685,7 @@ header > span, header > div { position: relative; z-index: 1; }
   background: linear-gradient(180deg, var(--darkred-soft), var(--surface) 42%);
 }
 .result-card.risk-veryhigh .result-card-header { color: var(--darkred-deep); background: rgba(194,47,52,.1); }
-.result-card.risk-veryhigh .result-card-header::before { content: "▲▲▲"; font-size: 10px; letter-spacing: -2px; }
+.result-card.risk-veryhigh .result-card-header::before { content: "▲▲▄1�7"; font-size: 10px; letter-spacing: -2px; }
 .result-card.risk-veryhigh .result-value, .result-card.risk-veryhigh .result-interp { color: var(--darkred-deep); }
 .result-card.risk-veryhigh .result-hint { background: var(--darkred-soft); border-left-color: var(--darkred); color: var(--darkred-deep); }
 
@@ -694,7 +694,7 @@ header > span, header > div { position: relative; z-index: 1; }
   background: linear-gradient(180deg, var(--blue-soft), var(--surface) 42%);
 }
 .result-card.risk-neutral .result-card-header { color: var(--blue-deep); background: rgba(59,111,224,.1); }
-.result-card.risk-neutral .result-card-header::before { content: "▪"; font-size: 12px; }
+.result-card.risk-neutral .result-card-header::before { content: "▄1�7"; font-size: 12px; }
 .result-card.risk-neutral .result-value, .result-card.risk-neutral .result-interp { color: var(--blue-deep); }
 .result-card.risk-neutral .result-hint { background: var(--blue-soft); border-left-color: var(--blue); color: var(--blue-deep); }
 
@@ -835,7 +835,7 @@ header > span, header > div { position: relative; z-index: 1; }
 .analysis-note { font-size: 12.5px; color: var(--muted); margin-bottom: 12px; line-height: 1.5; }
 
 /* ------------------------------------------------------------
-   15. ДИСКЛЕЙМЕР — МОДАЛЬНОЕ ОКНО
+   15. ДИСКЛЕЙМЕР  1�7 МОДАЛЬНОЕ ОКНО
    ------------------------------------------------------------ */
 .disclaimer-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -876,7 +876,7 @@ header > span, header > div { position: relative; z-index: 1; }
 .disclaimer-modal .disclaimer-accept-btn:hover { transform: translateY(-1px); }
 
 /* ------------------------------------------------------------
-   16. ДИСКЛЕЙМЕР — БАННЕР ВНИЗУ
+   16. ДИСКЛЕЙМЕР  1�7 БАННЕР ВНИЗУ
    ------------------------------------------------------------ */
 .disclaimer-banner {
   background: var(--surface);
@@ -1084,11 +1084,11 @@ header > span, header > div { position: relative; z-index: 1; }
 .k-inline-help { text-decoration: underline; cursor: help; color: var(--primary-2); }
 
 /* ------------------------------------------------------------
-   20. ТЁМНАЯ ТЕМА «MINIMAL» (в духе x.ai — переделана полностью)
+   20. ТЁМНАЯ ТЕМА «MINIMAL» (в духе x.ai  1�7 переделана полностью)
    ------------------------------------------------------------
    Характер: почти чёрный нейтральный фон, приглушённые серые тексты
    с прозрачной иерархией, тонкие рамки, минимум цвета, без неоновых
-   свечений. Единственный акцент — сдержанный индиго для активных
+   свечений. Единственный акцент  1�7 сдержанный индиго для активных
    элементов и кнопок. Это НЕ «светлая тема в тёмных цветах» и НЕ
    «космос», а спокойный минимализм.
    ------------------------------------------------------------ */
@@ -1110,7 +1110,7 @@ body.dark-theme {
   --text: #ececf1;
   --text-2: #c2c6cf;
   --muted: #969ba6;
-  --faint: #6d727d;
+  --faint: #79808d;
 
   /* Акцент осветлён в тёмной теме (принцип: делаем акцент «глянцевее»
      и светлее, чтобы он выделялся на тёмном фоне) */
@@ -1146,7 +1146,7 @@ body.dark-theme {
 }
 
 /* Типографика для тёмной темы (принцип из статьи):
-   - чуть увеличенный межстрочный интервал (1.5 → 1.7),
+   - чуть увеличенный межстрочный интервал (1.5 ↄ1�7 1.7),
    - чуть больше межсловного расстояния,
    - текст чуть легче, чтобы не был «жирным» на тёмном фоне */
 body.dark-theme {
@@ -1244,7 +1244,7 @@ body.dark-theme .input-group.emr-filled input {
   background-color: var(--primary-softer);
 }
 
-/* Поле вставки из Промед — тёмный вариант (перебивает инлайн-стили) */
+/* Поле вставки из Промед  1�7 тёмный вариант (перебивает инлайн-стили) */
 body.dark-theme #emrPaste {
   background: rgba(0,0,0,.28) !important;
   border: 1.5px solid rgba(255,255,255,.16) !important;
@@ -1257,9 +1257,9 @@ body.dark-theme #emrPaste:focus { border-color: var(--primary) !important; box-s
 /* --- Чекбоксы --- */
 body.dark-theme .cb-item, body.dark-theme .scale-cb-item { background: rgba(255,255,255,.02); border-color: rgba(255,255,255,.09); }
 body.dark-theme .cb-item:hover, body.dark-theme .scale-cb-item:hover { background: rgba(255,255,255,.04); border-color: var(--primary); }
-/* Заголовок чекбокса — главный, яркий и жирный */
+/* Заголовок чекбокса  1�7 главный, яркий и жирный */
 body.dark-theme .cb-item .cb-label { color: var(--text); font-weight: 700; }
-/* Комментарий — второстепенный, тусклее и тоньше, чтобы визуально
+/* Комментарий  1�7 второстепенный, тусклее и тоньше, чтобы визуально
    уступать заголовку */
 body.dark-theme .cb-item .cb-hint { color: #8a8f9a; font-weight: 400; font-size: 12px; }
 /* То же для чекбоксов внутри шкал: заголовок яркий, комментарий тусклый */
@@ -1441,7 +1441,6 @@ body.dark-theme .scale-cb-item.autofill-flash { animation: autofillFlashDark .7s
 
 /* --- Боковой блок анализа --- */
 #analysisModules { display: flex; flex-direction: column; gap: 14px; }
-body.dark-theme .sidebar-left::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); }
 
 /* ------------------------------------------------------------
    21. БОКОВАЯ ПАНЕЛЬ (фиксированная слева на широких экранах)
@@ -1457,7 +1456,7 @@ body.dark-theme .sidebar-left::-webkit-scrollbar-thumb { background: rgba(255,25
 }
 .sidebar-left > .card { flex: 0 0 auto; }
 
-/* Режим B: экран 1500–1879px — блок «плавает» в левом пустом поле
+/* Режим B: экран 1500 1�71879px  1�7 блок «плавает» в левом пустом поле
    (position: fixed), основная колонка остаётся полной ширины. */
 @media (min-width: 1500px) {
   .sidebar-left {
@@ -1466,7 +1465,7 @@ body.dark-theme .sidebar-left::-webkit-scrollbar-thumb { background: rgba(255,25
     width: calc((100vw - 980px) / 2 - 40px);
     min-width: 240px;
     max-width: 440px;
-    right: calc(50% + 510px);
+    right: calc(50% + 500px);
     margin-bottom: 0;
     max-height: calc(100vh - 110px);
     overflow-y: auto;
@@ -1479,7 +1478,7 @@ body.dark-theme .sidebar-left::-webkit-scrollbar-thumb { background: rgba(255,25
   .sidebar-left .input-group label { font-size: 12px; }
 }
 
-/* Режим A: экран >= 1880px — фиксированная ширина 440 */
+/* Режим A: экран >= 1880px  1�7 фиксированная ширина 440 */
 @media (min-width: 1880px) {
   .sidebar-left { width: 440px; }
   .sidebar-left .input-grid { grid-template-columns: 1fr 1fr !important; }
@@ -1544,3 +1543,13 @@ body.dark-theme .sidebar-left::-webkit-scrollbar-thumb { background: rgba(255,25
 @media (max-width: 380px) {
   .input-grid { grid-template-columns: 1fr; }
 }
+
+/* ------------------------------------------------------------
+   �������ʄ1�7 ���˄1�7 ������ INLINE-������ (���������� ����1�7 ��������1�7)
+   ------------------------------------------------------------ */
+#demoDropdown { position: absolute; right: 0; top: 100%; z-index: 1001; }
+#emrPaste { width: 100%; resize: vertical; }
+#clearEmrBtn { margin-left: auto; background: none; border: none; color: inherit; cursor: pointer; font-size: 16px; padding: 4px 6px; }
+#emrStatus { margin-top: 8px; font-size: 13px; color: var(--green); }
+.scale-note { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.disclaimer-version a { color: var(--primary); }
