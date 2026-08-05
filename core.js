@@ -465,6 +465,7 @@ function fillDemo(scenario) {
   autofill();
   updateAnalysisPanel();
   syncCustomSelects();
+  saveAppState();
 
   skipUndo = false;
 
@@ -981,3 +982,113 @@ function syncCustomSelects() {
     });
   });
 }
+
+// ===================================================
+//  АВТОСОХРАНЕНИЕ ДАННЫХ (localStorage)
+//  Значения полей, галочки, радио, списки и поле ЭМК
+//  переживают обновление страницы. Ключ версионируется:
+//  при изменении формата старые сохранения игнорируются.
+// ===================================================
+var APP_STATE_KEY = 'medicschet_state';
+var APP_STATE_VERSION = 1;
+var stateSaveTimer = null;
+
+function collectAppState() {
+  var fields = {};
+  var els = document.querySelectorAll(
+    'input[type="text"], input[type="number"], input[type="checkbox"], ' +
+    'input[type="radio"]:checked, select, textarea'
+  );
+  for (var i = 0; i < els.length; i++) {
+    var el = els[i];
+    if (!el.id) continue;
+    if (el.type === 'checkbox' || el.type === 'radio') {
+      fields[el.id] = el.checked;
+    } else {
+      fields[el.id] = el.value;
+    }
+  }
+  return { version: APP_STATE_VERSION, fields: fields };
+}
+
+function saveAppState() {
+  try {
+    localStorage.setItem(APP_STATE_KEY, JSON.stringify(collectAppState()));
+  } catch (e) {
+    // Хранилище недоступно или переполнено — молча пропускаем
+  }
+}
+
+function scheduleStateSave() {
+  if (stateSaveTimer) clearTimeout(stateSaveTimer);
+  stateSaveTimer = setTimeout(function() {
+    stateSaveTimer = null;
+    saveAppState();
+  }, 400);
+}
+
+// Восстановление сохранённого состояния при загрузке страницы.
+// Битые/устаревшие сохранения молча игнорируются.
+function restoreAppState() {
+  var raw = null;
+  try {
+    raw = localStorage.getItem(APP_STATE_KEY);
+  } catch (e) { return; }
+  if (!raw) return;
+
+  var data = null;
+  try {
+    data = JSON.parse(raw);
+  } catch (e) { return; }
+  if (!data || data.version !== APP_STATE_VERSION || !data.fields) return;
+
+  var fields = data.fields;
+  Object.keys(fields).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var v = fields[id];
+    if (el.type === 'checkbox' || el.type === 'radio') {
+      el.checked = !!v;
+    } else {
+      el.value = String(v);
+    }
+  });
+
+  // Применяем видимость блоков шкал и их подсветку по восстановленным чекбоксам
+  var scales = ['ckdepi','cg','grace','crusade','archbr','caprini','hasbled','cha2ds2','pesi','wells','geneva'];
+  scales.forEach(function(name) {
+    var toggleEl = document.querySelector('#toggle_' + name + ' input');
+    if (toggleEl) toggleScale(name, toggleEl);
+  });
+}
+
+// Полный сброс: очищает сохранение, все поля, галочки, списки,
+// возвращает все шкалы «включены», прячет результаты и чистит историю отмен.
+function resetAllData() {
+  try { localStorage.removeItem(APP_STATE_KEY); } catch (e) {}
+
+  resetAllFields();
+
+  // Списки
+  var killip = document.getElementById('grace_killip');
+  if (killip) killip.value = '1';
+
+  // Переключатели шкал — все включены
+  var scales = ['ckdepi','cg','grace','crusade','archbr','caprini','hasbled','cha2ds2','pesi','wells','geneva'];
+  scales.forEach(function(name) {
+    var toggleEl = document.querySelector('#toggle_' + name + ' input');
+    if (toggleEl) {
+      toggleEl.checked = true;
+      toggleScale(name, toggleEl);
+    }
+  });
+
+  syncCustomSelects();
+  updateFieldVisibility();
+  updateGroupButtonsUI();
+  updateAnalysisPanel();
+  resetUndoBaseState();
+}
+
+// Досохранить при обновлении/закрытии страницы (последний ввод не теряется)
+window.addEventListener('pagehide', saveAppState);

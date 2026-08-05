@@ -19,6 +19,7 @@
   <div style="display: flex; align-items: center; gap: 8px;">
     <button id="themeToggle" title="Переключить тему">🌓</button>
     <button id="helpOpenBtn" title="Инструкция">❓ Инструкция</button>
+    <button id="resetBtn" title="Сбросить все данные">🗑️ Сброс</button>
     <div style="position: relative;">
       <button id="demoToggle" title="Демонстрационные сценарии">🧪 Демо</button>
       <div id="demoDropdown" style="display:none;">
@@ -95,37 +96,37 @@
     <div class="card-body">
       <div class="scale-selector" id="scaleSelector">
         <label class="scale-toggle active" id="toggle_ckdepi">
-          <input type="checkbox" checked onchange="toggleScale('ckdepi',this)">CKD-EPI
+          <input type="checkbox" id="scale_ckdepi" checked onchange="toggleScale('ckdepi',this)">CKD-EPI
         </label>
         <label class="scale-toggle active" id="toggle_cg">
-          <input type="checkbox" checked onchange="toggleScale('cg',this)">Кокрофт-Голт
+          <input type="checkbox" id="scale_cg" checked onchange="toggleScale('cg',this)">Кокрофт-Голт
         </label>
         <label class="scale-toggle active" id="toggle_grace">
-          <input type="checkbox" checked onchange="toggleScale('grace',this)">GRACE
+          <input type="checkbox" id="scale_grace" checked onchange="toggleScale('grace',this)">GRACE
         </label>
         <label class="scale-toggle active" id="toggle_crusade">
-          <input type="checkbox" checked onchange="toggleScale('crusade',this)">CRUSADE
+          <input type="checkbox" id="scale_crusade" checked onchange="toggleScale('crusade',this)">CRUSADE
         </label>
         <label class="scale-toggle active" id="toggle_archbr">
-          <input type="checkbox" checked onchange="toggleScale('archbr',this)">ARC-HBR
+          <input type="checkbox" id="scale_archbr" checked onchange="toggleScale('archbr',this)">ARC-HBR
         </label>
         <label class="scale-toggle active" id="toggle_caprini">
-          <input type="checkbox" checked onchange="toggleScale('caprini',this)">Caprini
+          <input type="checkbox" id="scale_caprini" checked onchange="toggleScale('caprini',this)">Caprini
         </label>
         <label class="scale-toggle active" id="toggle_hasbled">
-          <input type="checkbox" checked onchange="toggleScale('hasbled',this)">HAS-BLED
+          <input type="checkbox" id="scale_hasbled" checked onchange="toggleScale('hasbled',this)">HAS-BLED
         </label>
         <label class="scale-toggle active" id="toggle_cha2ds2">
-          <input type="checkbox" checked onchange="toggleScale('cha2ds2',this)">CHA₂DS₂-VASc
+          <input type="checkbox" id="scale_cha2ds2" checked onchange="toggleScale('cha2ds2',this)">CHA₂DS₂-VASc
         </label>
         <label class="scale-toggle active" id="toggle_pesi">
-          <input type="checkbox" checked onchange="toggleScale('pesi',this)">PESI / sPESI (ТЭЛА)
+          <input type="checkbox" id="scale_pesi" checked onchange="toggleScale('pesi',this)">PESI / sPESI (ТЭЛА)
         </label>
         <label class="scale-toggle active" id="toggle_wells">
-          <input type="checkbox" checked onchange="toggleScale('wells',this)">Wells (ТЭЛА)
+          <input type="checkbox" id="scale_wells" checked onchange="toggleScale('wells',this)">Wells (ТЭЛА)
         </label>
         <label class="scale-toggle active" id="toggle_geneva">
-          <input type="checkbox" checked onchange="toggleScale('geneva',this)">Geneva (ТЭЛА)
+          <input type="checkbox" id="scale_geneva" checked onchange="toggleScale('geneva',this)">Geneva (ТЭЛА)
         </label>
       </div>
     </div>

@@ -136,7 +136,7 @@ header::after {
 header > span, header > div { position: relative; z-index: 1; }
 
 /* Кнопки в шапке (тема, инструкция, демо) */
-#themeToggle, #helpOpenBtn, #demoToggle {
+#themeToggle, #helpOpenBtn, #demoToggle, #resetBtn {
   background: rgba(255,255,255,.12) !important;
   border: 1px solid rgba(255,255,255,.22) !important;
   color: #fff !important;
@@ -148,7 +148,7 @@ header > span, header > div { position: relative; z-index: 1; }
   transition: background .18s, transform .12s;
 }
 #themeToggle { font-size: 19px; padding: 6px 11px; }
-#themeToggle:hover, #helpOpenBtn:hover, #demoToggle:hover {
+#themeToggle:hover, #helpOpenBtn:hover, #demoToggle:hover, #resetBtn:hover {
   background: rgba(255,255,255,.2) !important;
   transform: translateY(-1px);
 }
@@ -1199,14 +1199,16 @@ body.dark-theme header {
 body.dark-theme header::after { display: none; }
 body.dark-theme #themeToggle,
 body.dark-theme #helpOpenBtn,
-body.dark-theme #demoToggle {
+body.dark-theme #demoToggle,
+body.dark-theme #resetBtn {
   background: rgba(255,255,255,.05) !important;
   border: 1px solid rgba(255,255,255,.1) !important;
   color: #d7d7dd !important;
 }
 body.dark-theme #themeToggle:hover,
 body.dark-theme #helpOpenBtn:hover,
-body.dark-theme #demoToggle:hover { background: rgba(255,255,255,.1) !important; color: #fff !important; }
+body.dark-theme #demoToggle:hover,
+body.dark-theme #resetBtn:hover { background: rgba(255,255,255,.1) !important; color: #fff !important; }
 
 /* --- Выпадающее меню "Демо" --- */
 body.dark-theme #demoDropdown { background: var(--surface-2) !important; border-color: var(--border) !important; box-shadow: var(--shadow-3) !important; }

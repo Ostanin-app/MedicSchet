@@ -245,6 +245,7 @@ function handleEmrPaste() {
   statusEl.textContent = statusMsg;
   autofill();
   updateAnalysisPanel();
+  saveAppState();
 }
 
 // ===================================================
@@ -478,6 +479,13 @@ function renderPotassiumModule() {
 
     var ivBlock = '';
     if (formulaDeficit !== null && formulaDeficit > 0) {
+      // Сохраняем выбор пользователя при пересборке блока (объём/препарат/доступ)
+      var prevVolEl = document.getElementById('k_vol');
+      var prevVolValue = prevVolEl ? prevVolEl.value : '250';
+      var prevDrugEl = document.querySelector('input[name="k_drug"]:checked');
+      var prevDrugValue = prevDrugEl ? prevDrugEl.value : '4';
+      var prevAccEl = document.querySelector('input[name="k_acc"]:checked');
+      var prevAccValue = prevAccEl ? prevAccEl.value : 'pvk';
       var magnesiumOptionBlock = '';
       if (mg !== null && mg < 0.7) {
         var mgDisplay = mg.toFixed(2).replace('.', ',');
@@ -505,27 +513,27 @@ function renderPotassiumModule() {
           '<div class="k-builder__section">' +
             '<span class="k-builder__label">Препарат KCl:</span>' +
             '<div class="k-builder__options">' +
-              '<label class="k-builder__option"><input type="radio" name="k_drug" value="4" data-mmol="0.54" checked onchange="window.calcKInfusion()"> <span>4%</span></label>' +
-              '<label class="k-builder__option"><input type="radio" name="k_drug" value="7.5" data-mmol="1.0" onchange="window.calcKInfusion()"> <span>7.5%</span></label>' +
-              '<label class="k-builder__option"><input type="radio" name="k_drug" value="10" data-mmol="1.34" onchange="window.calcKInfusion()"> <span>10%</span></label>' +
+              '<label class="k-builder__option"><input type="radio" name="k_drug" value="4" data-mmol="0.54"' + (prevDrugValue === '4' ? ' checked' : '') + ' onchange="window.calcKInfusion()"> <span>4%</span></label>' +
+              '<label class="k-builder__option"><input type="radio" name="k_drug" value="7.5" data-mmol="1.0"' + (prevDrugValue === '7.5' ? ' checked' : '') + ' onchange="window.calcKInfusion()"> <span>7.5%</span></label>' +
+              '<label class="k-builder__option"><input type="radio" name="k_drug" value="10" data-mmol="1.34"' + (prevDrugValue === '10' ? ' checked' : '') + ' onchange="window.calcKInfusion()"> <span>10%</span></label>' +
             '</div>' +
           '</div>' +
           '<div class="k-builder__section">' +
             '<span class="k-builder__label">Растворитель (NaCl 0,9%):</span>' +
             '<select id="k_vol" onchange="window.calcKInfusion()" class="k-builder__select">' +
-              '<option value="100">100 мл</option>' +
-              '<option value="200">200 мл</option>' +
-              '<option value="250" selected>250 мл</option>' +
-              '<option value="400">400 мл</option>' +
-              '<option value="500">500 мл</option>' +
-              '<option value="1000">1000 мл</option>' +
+              '<option value="100"' + (prevVolValue === '100' ? ' selected' : '') + '>100 мл</option>' +
+              '<option value="200"' + (prevVolValue === '200' ? ' selected' : '') + '>200 мл</option>' +
+              '<option value="250"' + (prevVolValue === '250' ? ' selected' : '') + '>250 мл</option>' +
+              '<option value="400"' + (prevVolValue === '400' ? ' selected' : '') + '>400 мл</option>' +
+              '<option value="500"' + (prevVolValue === '500' ? ' selected' : '') + '>500 мл</option>' +
+              '<option value="1000"' + (prevVolValue === '1000' ? ' selected' : '') + '>1000 мл</option>' +
             '</select>' +
           '</div>' +
           '<div class="k-builder__section">' +
             '<span class="k-builder__label">Доступ:</span>' +
             '<div class="k-builder__options">' +
-              '<label class="k-builder__option"><input type="radio" name="k_acc" value="pvk" checked onchange="window.calcKInfusion()"> <span>ПВК</span></label>' +
-              '<label class="k-builder__option"><input type="radio" name="k_acc" value="cvk" onchange="window.calcKInfusion()"> <span>ЦВК</span></label>' +
+              '<label class="k-builder__option"><input type="radio" name="k_acc" value="pvk"' + (prevAccValue === 'pvk' ? ' checked' : '') + ' onchange="window.calcKInfusion()"> <span>ПВК</span></label>' +
+              '<label class="k-builder__option"><input type="radio" name="k_acc" value="cvk"' + (prevAccValue === 'cvk' ? ' checked' : '') + ' onchange="window.calcKInfusion()"> <span>ЦВК</span></label>' +
             '</div>' +
           '</div>' +
           magnesiumOptionBlock +
@@ -860,9 +868,17 @@ document.addEventListener('DOMContentLoaded', function() {
   // --- Кастомные раскрывающиеся списки (тёмная тема) ---
   initCustomSelect(document.getElementById('grace_killip'));
 
+  // --- Автосохранение: любое изменение поля/галочки/списка → сохранение ---
+  document.addEventListener('input', scheduleStateSave);
+  document.addEventListener('change', scheduleStateSave);
+
   // --- Кнопка темы ---
   var themeBtn = document.getElementById('themeToggle');
   if (themeBtn) themeBtn.addEventListener('click', toggleDarkMode);
+
+  // --- Кнопка «Сбросить всё» ---
+  var resetBtn = document.getElementById('resetBtn');
+  if (resetBtn) resetBtn.addEventListener('click', resetAllData);
 
   // --- Кнопка Undo ---
   var undoBtn = document.getElementById('undoBtn');
@@ -970,6 +986,13 @@ document.addEventListener('DOMContentLoaded', function() {
   updateGroupButtonsUI();
   updateAnalysisPanel();
   updateNavButtons();
+
+  // --- Восстановление сохранённых данных (поля, галочки, списки, шкалы) ---
+  restoreAppState();
+  syncCustomSelects();
+  updateFieldVisibility();
+  updateGroupButtonsUI();
+  updateAnalysisPanel();
 
   // --- Чистое стартовое состояние Undo: сбрасываем стек и таймер,
   //     сохраняем ровно 1 базовое состояние (счётчик отмен = 0) ---
