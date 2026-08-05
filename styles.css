@@ -1557,5 +1557,4 @@ body.dark-theme .sidebar-left::-webkit-scrollbar-thumb { background: rgba(255,25
 }
 #clearEmrBtn { margin-left: auto; background: none; border: none; color: inherit; cursor: pointer; font-size: 16px; padding: 4px 6px; }
 #emrStatus { margin-top: 8px; font-size: 13px; color: var(--green); }
-.scale-note { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
 .disclaimer-version a { color: var(--primary); }
