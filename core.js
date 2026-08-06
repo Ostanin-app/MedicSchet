@@ -29,7 +29,7 @@ function saveUndoState() {
   var sexInput = document.getElementById('sex');
   if (sexInput) state['sex'] = sexInput.value;
 
-  var commonCbIds = ['cb_dm','cb_hf','cb_htn','cb_stroke','cb_vasc','cb_verapamil'];
+  var commonCbIds = ['cb_dm','cb_hf','cb_htn','cb_stroke','cb_embolism','cb_vte','cb_vasc','cb_verapamil'];
   commonCbIds.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) state[id] = el.checked;
@@ -117,7 +117,7 @@ function performUndo() {
   }
   syncSexFromHidden();
 
-  var commonCbIds = ['cb_dm','cb_hf','cb_htn','cb_stroke','cb_vasc','cb_verapamil'];
+  var commonCbIds = ['cb_dm','cb_hf','cb_htn','cb_stroke','cb_embolism','cb_vte','cb_vasc','cb_verapamil'];
   commonCbIds.forEach(function(id) {
     var el = document.getElementById(id);
     if (el && prevState.hasOwnProperty(id)) {
@@ -231,7 +231,7 @@ function initUndoTracking() {
   });
 
   var allTrackedIds = [
-    'cb_dm','cb_hf','cb_htn','cb_stroke','cb_vasc','cb_verapamil',
+    'cb_dm','cb_hf','cb_htn','cb_stroke','cb_embolism','cb_vte','cb_vasc','cb_verapamil',
     'grace_killip',
     'grace_arrest','grace_st','grace_enzymes',
     'crusade_female','crusade_hf','crusade_vasc','crusade_dm',
@@ -325,7 +325,7 @@ function resetAllFields() {
   document.getElementById('sex').value = '';
   syncSexFromHidden();
 
-  var commonCbs = ['cb_dm','cb_hf','cb_htn','cb_stroke','cb_vasc','cb_verapamil'];
+  var commonCbs = ['cb_dm','cb_hf','cb_htn','cb_stroke','cb_embolism','cb_vte','cb_vasc','cb_verapamil'];
   commonCbs.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.checked = false;
@@ -1092,3 +1092,20 @@ function resetAllData() {
 
 // Досохранить при обновлении/закрытии страницы (последний ввод не теряется)
 window.addEventListener('pagehide', saveAppState);
+
+// ===================================================
+//  КАРТОЧКИ-ЧЕКБОКСЫ: блокировка авто-карточек
+//  Клик по авто-карточке (жёлтой, классы .auto-cb /
+//  .cb-item.auto-filled) игнорируется — значение приходит
+//  из общих данных/анализов. Ручные карточки переключаются
+//  штатной label-активацией скрытого чекбокса.
+//  Значки-подсказки (⚠️) работают по наведению и не
+//  затрагиваются; на всякий случай их клики пропускаем.
+// ===================================================
+document.addEventListener('click', function(e) {
+  var target = e.target;
+  if (!target || !target.closest) return;
+  if (target.closest('.warning-icon')) return;
+  var label = target.closest('label.auto-cb, label.cb-item.auto-filled');
+  if (label) e.preventDefault();
+});

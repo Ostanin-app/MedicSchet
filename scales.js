@@ -751,8 +751,8 @@ function autofill() {
   if (cb('cb_htn')) flashField(document.getElementById('cha_htn'));
   setCb('cha_dm', cb('cb_dm'));
   if (cb('cb_dm')) flashField(document.getElementById('cha_dm'));
-  setCb('cha_stroke', cb('cb_stroke'));
-  if (cb('cb_stroke')) flashField(document.getElementById('cha_stroke'));
+  setCb('cha_stroke', cb('cb_stroke') || cb('cb_embolism'));
+  if (cb('cb_stroke') || cb('cb_embolism')) flashField(document.getElementById('cha_stroke'));
   setCb('cha_vasc', cb('cb_vasc'));
   if (cb('cb_vasc')) flashField(document.getElementById('cha_vasc'));
 
@@ -809,6 +809,18 @@ function autofill() {
   setCb('cap_chf', cb('cb_hf'));
   if (cb('cb_hf')) flashField(document.getElementById('cap_chf'));
 
+  // Caprini «ТГВ / ТЭЛА в анамнезе» — автозаполняется из общего чекбокса ВТЭО.
+  // ВНИМАНИЕ: «Инсульт (давностью до 1 мес.)» (cap_stroke_5) НЕ автозаполняется —
+  // нужна давность < 1 мес., её нет в общих данных; отмечается вручную.
+  setCb('cap_dvt_hx', cb('cb_vte'));
+  if (cb('cb_vte')) flashField(document.getElementById('cap_dvt_hx'));
+
+  // Wells и Женева: «ТГВ или ТЭЛА в анамнезе» — из общего чекбокса ВТЭО
+  setCb('wells_prev_dvt', cb('cb_vte'));
+  if (cb('cb_vte')) flashField(document.getElementById('wells_prev_dvt'));
+  setCb('geneva_prev_dvt', cb('cb_vte'));
+  if (cb('cb_vte')) flashField(document.getElementById('geneva_prev_dvt'));
+
   // GRACE → Caprini предупреждение
   var capAcsWarningIcon = document.getElementById('cap_acs_warning');
   if (capAcsWarningIcon) {
@@ -818,6 +830,19 @@ function autofill() {
       setupTooltipTrigger(capAcsWarningIcon, warningText);
     } else {
       capAcsWarningIcon.style.display = 'none';
+    }
+  }
+
+  // Caprini «Инсульт (давностью до 1 мес.)»: если в общих данных отмечен инсульт —
+  // показываем уведомление, но пункт НЕ автозаполняем (нужна давность < 1 мес.),
+  // врач отмечает его вручную при необходимости.
+  var capStrokeWarning = document.getElementById('cap_stroke_warning');
+  if (capStrokeWarning) {
+    if (cb('cb_stroke')) {
+      capStrokeWarning.style.display = 'inline';
+      setupTooltipTrigger(capStrokeWarning, 'Инсульт отмечен в общих данных. Уточните давность: если < 1 мес., отметьте пункт вручную.');
+    } else {
+      capStrokeWarning.style.display = 'none';
     }
   }
 

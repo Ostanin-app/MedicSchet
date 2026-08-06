@@ -238,8 +238,24 @@
         <label class="cb-item field-stroke">
           <input type="checkbox" id="cb_stroke">
           <div>
-            <div class="cb-label">Инсульт / ТИА / тромбоэмболия в анамнезе</div>
-            <div class="cb-hint">Любой ранее перенесённый инсульт, ТИА или системная тромбоэмболия</div>
+            <div class="cb-label">Инсульт / ТИА в анамнезе</div>
+            <div class="cb-hint">Любой ранее перенесённый инсульт или ТИА</div>
+          </div>
+        </label>
+
+        <label class="cb-item field-embolism">
+          <input type="checkbox" id="cb_embolism">
+          <div>
+            <div class="cb-label">Системная (артериальная) эмболия в анамнезе</div>
+            <div class="cb-hint">Эмболия артерий большого круга (конечность, брыжейка, почка и др.). Это не ТГВ/ТЭЛА</div>
+          </div>
+        </label>
+
+        <label class="cb-item field-vte">
+          <input type="checkbox" id="cb_vte">
+          <div>
+            <div class="cb-label">ТГВ / ТЭЛА в анамнезе (венозные тромбоэмболии)</div>
+            <div class="cb-hint">Тромбоз глубоких вен и/или ТЭЛА в прошлом</div>
           </div>
         </label>
 
@@ -342,12 +358,12 @@
         </label>
 
         <label class="scale-cb-item auto-cb" id="arc_ckd_major_row">
-          <input type="checkbox" id="arc_ckd_major">
+          <input type="checkbox" id="arc_ckd_major" disabled>
           <span>Тяжёлая или терминальная ХБП (рСКФ &lt;30) <span class="auto-tag">авто</span></span>
         </label>
 
         <label class="scale-cb-item auto-cb" id="arc_hb_major_row">
-          <input type="checkbox" id="arc_hb_major">
+          <input type="checkbox" id="arc_hb_major" disabled>
           <span>Гемоглобин &lt;110 г/л <span class="auto-tag">авто</span></span>
         </label>
 
@@ -357,7 +373,7 @@
         </label>
 
         <label class="scale-cb-item auto-cb" id="arc_plt_row">
-          <input type="checkbox" id="arc_plt">
+          <input type="checkbox" id="arc_plt" disabled>
           <span>Тромбоцитопения &lt;100 ×10⁹/л <span class="auto-tag">авто</span></span>
         </label>
 
@@ -412,17 +428,17 @@
       <div class="scale-cb-grid">
 
         <label class="scale-cb-item auto-cb" id="arc_age75_row">
-          <input type="checkbox" id="arc_age75">
+          <input type="checkbox" id="arc_age75" disabled>
           <span>Возраст ≥75 лет <span class="auto-tag">авто</span></span>
         </label>
 
         <label class="scale-cb-item auto-cb" id="arc_ckd_minor_row">
-          <input type="checkbox" id="arc_ckd_minor">
+          <input type="checkbox" id="arc_ckd_minor" disabled>
           <span>Умеренная ХБП (рСКФ 30–59) <span class="auto-tag">авто</span></span>
         </label>
 
         <label class="scale-cb-item auto-cb" id="arc_hb_minor_row">
-          <input type="checkbox" id="arc_hb_minor">
+          <input type="checkbox" id="arc_hb_minor" disabled>
           <span>Гемоглобин 110–129 г/л (муж) / 110–119 г/л (жен) <span class="auto-tag">авто</span></span>
         </label>
 
@@ -452,7 +468,7 @@
       <div class="scale-cb-grid">
   
         <label class="scale-cb-item auto-cb" id="hb_htn_row">
-          <input type="checkbox" id="hb_htn">
+          <input type="checkbox" id="hb_htn" disabled>
           <span>H — Неконтролируемая АГ (АД сист. &gt;160 мм рт. ст.) <span class="auto-tag">авто</span></span>
           <span class="pts">+1</span>
         </label>
@@ -471,7 +487,7 @@
         </label>
   
         <label class="scale-cb-item auto-cb" id="hb_stroke_row">
-          <input type="checkbox" id="hb_stroke">
+          <input type="checkbox" id="hb_stroke" disabled>
           <span>S — Инсульт в анамнезе <span class="auto-tag">авто из общих</span></span>
           <span class="pts">+1</span>
         </label>
@@ -490,7 +506,7 @@
         </label>
   
         <label class="scale-cb-item auto-cb" id="hb_age_row">
-          <input type="checkbox" id="hb_age">
+          <input type="checkbox" id="hb_age" disabled>
           <span>E — Возраст &gt;65 лет <span class="auto-tag">авто</span></span>
           <span class="pts">+1</span>
         </label>
@@ -682,9 +698,9 @@
           <input type="checkbox" id="cap_age75" disabled>
           <span>Возраст ≥75 лет <span class="auto-tag">авто</span></span><span class="pts">×3</span>
         </label>
-        <label class="scale-cb-item">
-          <input type="checkbox" id="cap_dvt_hx">
-          <span>ТГВ / ТЭЛА в анамнезе</span><span class="pts">×3</span>
+        <label class="scale-cb-item auto-cb">
+          <input type="checkbox" id="cap_dvt_hx" disabled>
+          <span>ТГВ / ТЭЛА в анамнезе <span class="auto-tag">авто из общих</span></span><span class="pts">×3</span>
         </label>
         <label class="scale-cb-item">
           <input type="checkbox" id="cap_fam_dvt">
@@ -736,7 +752,8 @@
         </label>
         <label class="scale-cb-item">
           <input type="checkbox" id="cap_stroke_5">
-          <span>Инсульт (давностью до 1 мес.)</span><span class="pts">×5</span>
+          <span class="scale-cb-text">Инсульт (давностью до 1 мес.) <span class="scale-cb-hint">отмечается вручную — нужна давность < 1 мес.</span></span><span class="pts">×5</span>
+          <span class="warning-icon" id="cap_stroke_warning" style="display:none; margin-left:6px; cursor:help;">⚠️</span>
         </label>
         <label class="scale-cb-item">
           <input type="checkbox" id="cap_multiple_trauma">
@@ -819,7 +836,7 @@
         </label>
 
         <label class="scale-cb-item auto-cb" id="wells_hr_row">
-          <input type="checkbox" id="wells_hr">
+          <input type="checkbox" id="wells_hr" disabled>
           <span>ЧСС >100 уд/мин <span class="auto-tag">авто</span></span>
           <span class="pts">+1,5</span>
         </label>
@@ -833,9 +850,9 @@
           <span class="pts">+1,5</span>
         </label>
 
-        <label class="scale-cb-item">
-          <input type="checkbox" id="wells_prev_dvt">
-          <span>ТГВ или ТЭЛА в анамнезе</span>
+        <label class="scale-cb-item auto-cb">
+          <input type="checkbox" id="wells_prev_dvt" disabled>
+          <span>ТГВ или ТЭЛА в анамнезе <span class="auto-tag">авто из общих</span></span>
           <span class="pts">+1,5</span>
         </label>
 
@@ -867,14 +884,14 @@
       <div class="scale-cb-grid">
 
         <label class="scale-cb-item auto-cb" id="geneva_age_row">
-          <input type="checkbox" id="geneva_age">
+          <input type="checkbox" id="geneva_age" disabled>
           <span>Возраст >65 лет <span class="auto-tag">авто</span></span>
           <span class="pts">+1</span>
         </label>
 
-        <label class="scale-cb-item">
-          <input type="checkbox" id="geneva_prev_dvt">
-          <span>ТГВ или ТЭЛА в анамнезе</span>
+        <label class="scale-cb-item auto-cb">
+          <input type="checkbox" id="geneva_prev_dvt" disabled>
+          <span>ТГВ или ТЭЛА в анамнезе <span class="auto-tag">авто из общих</span></span>
           <span class="pts">+3</span>
         </label>
 
@@ -919,13 +936,13 @@
       <div class="scale-cb-grid">
 
         <label class="scale-cb-item auto-cb" id="geneva_hr75_row">
-          <input type="checkbox" id="geneva_hr75">
+          <input type="checkbox" id="geneva_hr75" disabled>
           <span>ЧСС 75–94 уд/мин <span class="auto-tag">авто</span></span>
           <span class="pts">+3</span>
         </label>
 
         <label class="scale-cb-item auto-cb" id="geneva_hr95_row">
-          <input type="checkbox" id="geneva_hr95">
+          <input type="checkbox" id="geneva_hr95" disabled>
           <span>ЧСС ≥95 уд/мин <span class="auto-tag">авто</span></span>
           <span class="pts">+5</span>
         </label>

@@ -963,7 +963,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // --- Обработчики общих чекбоксов ---
-  ['cb_hf', 'cb_htn', 'cb_dm', 'cb_stroke', 'cb_vasc', 'grace_enzymes'].forEach(function(id) {
+  ['cb_hf', 'cb_htn', 'cb_dm', 'cb_stroke', 'cb_embolism', 'cb_vte', 'cb_vasc', 'grace_enzymes'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) {
       el.addEventListener('change', function() {

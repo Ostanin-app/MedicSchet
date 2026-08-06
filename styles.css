@@ -311,11 +311,6 @@ select option {
 }
 .cb-item .cb-label { font-size: 13.5px; line-height: 1.4; }
 .cb-item .cb-hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.cb-item.auto-filled {
-  border-color: var(--orange);
-  background: var(--orange-soft);
-}
-.cb-item.auto-filled .cb-hint { color: var(--orange-deep); }
 
 /* ------------------------------------------------------------
    7. ВЫБОР АКТИВНЫХ ШКАЛ (переключатели)
@@ -439,11 +434,7 @@ select option {
   line-height: 1.4;
 }
 
-/* Поля, заполненные автоматически (оранжевая подсветка) */
-.auto-cb {
-  border-color: var(--orange) !important;
-  background: var(--orange-soft) !important;
-}
+/* Поля, заполненные автоматически — подсветка включается при отметке (см. @supports внизу) */
 
 /* Селект в шкале */
 .scale-select-group {
@@ -1289,7 +1280,7 @@ body.dark-theme .scale-select-group label { color: var(--muted); }
 body.dark-theme .section-label { color: var(--faint); border-bottom-color: rgba(255,255,255,.07); }
 
 /* --- Метка «авто» --- */
-body.dark-theme .auto-cb { border-color: rgba(245,166,35,.4) !important; background: rgba(245,166,35,.09) !important; }
+/* Тёмная тема для авто-полей — через переменные, см. @supports внизу */
 
 /* --- Переключатели шкал --- */
 body.dark-theme .scale-toggle {
@@ -1634,3 +1625,51 @@ body.dark-theme .sidebar-left::-webkit-scrollbar-thumb { background: rgba(255,25
 }
 .custom-select__item:hover { background: var(--primary-soft); }
 .custom-select__item.active { background: var(--primary-soft); color: var(--primary-2); font-weight: 600; }
+
+/* Авто-чекбоксы: заблокированы (не снять вручную), но галочка обычного цвета, не серая */
+.auto-cb input[type="checkbox"]:disabled {
+  accent-color: var(--primary);
+  opacity: 1;
+}
+
+/* ============================================================
+   НОВЫЙ ВИД КАРТОЧЕК-ЧЕКБОКСОВ (для современных браузеров)
+   Чекбокс скрыт; отмеченная карточка подсвечивается целиком:
+   ручные — синим, авто — жёлтым. В старых браузерах без :has
+   чекбоксы остаются видимыми — вид как раньше.
+   ============================================================ */
+@supports selector(:has(*)) {
+  /* Скрываем сами чекбоксы карточек */
+  .cb-item input[type="checkbox"],
+  .scale-cb-item input[type="checkbox"] {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    margin: 0;
+    pointer-events: none;
+  }
+
+  /* Ручные карточки: отмечена → синяя подсветка */
+  .cb-item:has(input[type="checkbox"]:checked),
+  .scale-cb-item:has(input[type="checkbox"]:checked) {
+    border-color: var(--primary) !important;
+    background: var(--primary-soft) !important;
+    box-shadow: inset 3px 0 0 var(--primary) !important;
+  }
+
+  /* Авто-карточки: отмечена → жёлтая подсветка */
+  .auto-cb:has(input[type="checkbox"]:checked),
+  .cb-item.auto-filled:has(input[type="checkbox"]:checked) {
+    border-color: var(--orange) !important;
+    background: var(--orange-soft) !important;
+    box-shadow: inset 3px 0 0 var(--orange) !important;
+  }
+  .cb-item.auto-filled:has(input[type="checkbox"]:checked) .cb-hint {
+    color: var(--orange-deep) !important;
+  }
+
+  /* Авто-карточки не выглядят кликабельными */
+  .auto-cb,
+  .cb-item.auto-filled { cursor: default; }
+}
