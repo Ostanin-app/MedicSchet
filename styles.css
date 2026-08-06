@@ -136,7 +136,7 @@ header::after {
 header > span, header > div { position: relative; z-index: 1; }
 
 /* Кнопки в шапке (тема, инструкция, демо) */
-#themeToggle, #helpOpenBtn, #demoToggle, #resetBtn {
+#themeToggle, #helpOpenBtn, #demoToggle {
   background: rgba(255,255,255,.12) !important;
   border: 1px solid rgba(255,255,255,.22) !important;
   color: #fff !important;
@@ -148,7 +148,7 @@ header > span, header > div { position: relative; z-index: 1; }
   transition: background .18s, transform .12s;
 }
 #themeToggle { font-size: 19px; padding: 6px 11px; }
-#themeToggle:hover, #helpOpenBtn:hover, #demoToggle:hover, #resetBtn:hover {
+#themeToggle:hover, #helpOpenBtn:hover, #demoToggle:hover {
   background: rgba(255,255,255,.2) !important;
   transform: translateY(-1px);
 }
@@ -1190,16 +1190,14 @@ body.dark-theme header {
 body.dark-theme header::after { display: none; }
 body.dark-theme #themeToggle,
 body.dark-theme #helpOpenBtn,
-body.dark-theme #demoToggle,
-body.dark-theme #resetBtn {
+body.dark-theme #demoToggle {
   background: rgba(255,255,255,.05) !important;
   border: 1px solid rgba(255,255,255,.1) !important;
   color: #d7d7dd !important;
 }
 body.dark-theme #themeToggle:hover,
 body.dark-theme #helpOpenBtn:hover,
-body.dark-theme #demoToggle:hover,
-body.dark-theme #resetBtn:hover { background: rgba(255,255,255,.1) !important; color: #fff !important; }
+body.dark-theme #demoToggle:hover { background: rgba(255,255,255,.1) !important; color: #fff !important; }
 
 /* --- Выпадающее меню "Демо" --- */
 body.dark-theme #demoDropdown { background: var(--surface-2) !important; border-color: var(--border) !important; box-shadow: var(--shadow-3) !important; }
@@ -1672,4 +1670,65 @@ body.dark-theme .sidebar-left::-webkit-scrollbar-thumb { background: rgba(255,25
   /* Авто-карточки не выглядят кликабельными */
   .auto-cb,
   .cb-item.auto-filled { cursor: default; }
+}
+/* ------------------------------------------------------------
+   КНОПКА «СБРОС» — заметная, приглушённо-красная
+   В шапке (<1280px): над тёмным градиентом — светлый красный.
+   Плавающая справа (>=1280px): над страницей — более тёмный
+   красный. При наведении в обоих случаях: яркая красная
+   заливка, свечение, лёгкое увеличение, жирный текст.
+   ------------------------------------------------------------ */
+#resetBtn {
+  background: rgba(255,255,255,.12) !important;
+  border: 1.5px solid rgba(255,138,128,.85) !important;
+  color: #ff8a80 !important;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background .18s, color .18s, border-color .18s,
+              box-shadow .18s, transform .15s;
+}
+#resetBtn:hover {
+  background: #e74c3c !important;
+  border-color: #e74c3c !important;
+  color: #fff !important;
+  font-weight: 700;
+  transform: scale(1.08);
+  box-shadow: 0 0 14px rgba(231,76,60,.55);
+}
+
+/* Плавающая справа от основной колонки (широкие экраны) */
+@media (min-width: 1280px) {
+  #resetBtn {
+    position: fixed;
+    top: 107px;
+    left: calc(50% + 500px);
+    z-index: 900;
+    background: rgba(255,255,255,.72) !important;
+    border-color: #d64545 !important;
+    color: #c0392b !important;
+  }
+}
+
+/* Тёмная тема */
+body.dark-theme #resetBtn {
+  background: rgba(255,255,255,.05) !important;
+  border-color: rgba(255,107,94,.75) !important;
+  color: #ff8a80 !important;
+}
+@media (min-width: 1280px) {
+  body.dark-theme #resetBtn {
+    background: rgba(255,255,255,.08) !important;
+    border-color: #ff6b5e !important;
+    color: #ff8a80 !important;
+  }
+}
+body.dark-theme #resetBtn:hover {
+  background: #ff5252 !important;
+  border-color: #ff5252 !important;
+  color: #fff !important;
+  font-weight: 700;
+  box-shadow: 0 0 16px rgba(255,82,82,.6);
 }

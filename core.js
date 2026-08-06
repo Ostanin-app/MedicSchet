@@ -1088,6 +1088,9 @@ function resetAllData() {
   updateGroupButtonsUI();
   updateAnalysisPanel();
   resetUndoBaseState();
+
+  // После сброса — плавно наверх, чтобы было видно начало страницы
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // Досохранить при обновлении/закрытии страницы (последний ввод не теряется)
