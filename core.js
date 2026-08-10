@@ -193,6 +193,12 @@ function performUndo() {
   updateFieldVisibility();
   updateAnalysisPanel();
 
+  // После отмены обновляем подсветки: снимаем красные (от старого
+  // «Рассчитать») и показываем актуальное оранжевое состояние.
+  highlightErrorFields([]);
+  applyRangeWarnings();
+  updateCalcButtonWarnings(getRangeWarnings());
+
   updateUndoButton();
   skipUndo = false;
 }
@@ -633,6 +639,7 @@ function setCb(id, val) {
 // В штатной работе пара всегда согласована (её синхронизируют слушатели
 // change), поэтому здесь при рассинхроне (возможен только в старых
 // сохранениях) включаем оба чекбокса.
+
 function syncLinkedCheckboxes() {
   var pairs = [
     ['wells_hemoptysis', 'geneva_hemoptysis'],
@@ -649,6 +656,93 @@ function syncLinkedCheckboxes() {
       b.checked = combined;
     }
   });
+}
+
+// Подсветка незаполненных обязательных полей после нажатия «Рассчитать».
+// fieldIds — массив id полей (null пропускаются); класс .field-error
+// снимается со всех контейнеров и вешается на указанные.
+function highlightErrorFields(fieldIds) {
+  var groups = document.querySelectorAll('.input-group.field-error');
+  for (var i = 0; i < groups.length; i++) {
+    groups[i].classList.remove('field-error');
+  }
+  if (!fieldIds) return;
+  fieldIds.forEach(function(id) {
+    if (!id) return;
+    var el = document.getElementById(id);
+    var grp = el ? el.closest('.input-group') : null;
+    if (grp) grp.classList.add('field-error');
+  });
+}
+
+// Реалистичные диапазоны полей для оранжевого предупреждения.
+// Поле со значением вне [min, max] подсвечивается оранжевым,
+// но расчёт НЕ блокируется (вдруг редкий клинический случай).
+var FIELD_RANGES = [
+  { id: 'age',         min: 0,   max: 130,  label: 'возраст' },
+  { id: 'height',      min: 50,  max: 250,  label: 'рост' },
+  { id: 'weight',      min: 2,   max: 300,  label: 'вес' },
+  { id: 'sbp',         min: 50,  max: 300,  label: 'систолическое АД' },
+  { id: 'hr',          min: 20,  max: 250,  label: 'ЧСС' },
+  { id: 'creatinine',  min: 20,  max: 1500, label: 'креатинин' },
+  { id: 'hb',          min: 30,  max: 250,  label: 'гемоглобин' },
+  { id: 'hct',         min: 10,  max: 75,   label: 'гематокрит' },
+  { id: 'plt',         min: 10,  max: 1000, label: 'тромбоциты' },
+  { id: 'pesi_rr',     min: 4,   max: 60,   label: 'частота дыханий' },
+  { id: 'pesi_temp',   min: 30,  max: 45,   label: 'температура' },
+  { id: 'pesi_spo2',   min: 40,  max: 100,  label: 'SpO₂' },
+  { id: 'ck_total',    min: 10,  max: 100000, label: 'КФК общая' },
+  { id: 'ck_mb',       min: 1,   max: 10000,  label: 'КФК-МВ' },
+  { id: 'na_measured', min: 100, max: 180,  label: 'натрий' },
+  { id: 'glucose',     min: 1,   max: 50,   label: 'глюкоза' },
+  { id: 'potassium',   min: 1,   max: 10,   label: 'калий' },
+  { id: 'magnesium',   min: 0.1, max: 5,    label: 'магний' }
+];
+
+// Возвращает [{ id, label }] для полей, значение которых заполнено и вне [min, max].
+function getRangeWarnings() {
+  var out = [];
+  FIELD_RANGES.forEach(function(r) {
+    var el = document.getElementById(r.id);
+    if (!el) return;
+    if (el.type === 'checkbox') return;
+    var v = parseFloat(el.value.replace(',', '.')); // «0,85» → 0.85
+    if (isNaN(v) || el.value === '') return; // пустое — обрабатывается красной подсветкой
+    if (v < r.min || v > r.max) out.push({ id: r.id, label: r.label });
+  });
+  return out;
+}
+
+// Оранжевая подсветка полей вне диапазона (не трогает красные field-error).
+function applyRangeWarnings() {
+  var groups = document.querySelectorAll('.input-group.field-warning');
+  for (var i = 0; i < groups.length; i++) {
+    groups[i].classList.remove('field-warning');
+  }
+  getRangeWarnings().forEach(function(w) {
+    var el = document.getElementById(w.id);
+    var grp = el ? el.closest('.input-group') : null;
+    if (!grp) return;
+    if (grp.classList.contains('field-error')) return; // пустое приоритетнее
+    grp.classList.add('field-warning');
+  });
+}
+
+// Обновляет кнопку «Рассчитать» при наличии значений вне диапазона.
+// warnings — массив { label } из getRangeWarnings().
+function updateCalcButtonWarnings(warnings) {
+  var btn = document.getElementById('calcBtn');
+  var txt = document.getElementById('calcBtnText');
+  if (!btn || !txt) return;
+  if (warnings && warnings.length > 0) {
+    btn.classList.add('has-warnings');
+    var labels = warnings.slice(0, 4).map(function(w) { return w.label; });
+    var extra = warnings.length > 4 ? ', и др.' : '';
+    txt.textContent = 'Проверьте значения: ' + labels.join(', ') + extra;
+  } else {
+    btn.classList.remove('has-warnings');
+    txt.textContent = '⚡ РАССЧИТАТЬ ШКАЛЫ';
+  }
 }
 
 function toggleScale(name, el) {
@@ -1200,6 +1294,12 @@ function resetAllData() {
 
   // Цирроз печени: после сброса снимаем авто-метку HAS-BLED «Печень».
   syncCirrhosisAuto();
+
+  // Снимаем подсветки: красные (пустые поля) и оранжевые (вне диапазона),
+  // возвращаем кнопке «Рассчитать» обычный вид.
+  highlightErrorFields([]);
+  applyRangeWarnings();
+  updateCalcButtonWarnings([]);
 
   resetUndoBaseState();
 

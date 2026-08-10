@@ -1284,25 +1284,57 @@ function calculate() {
   var hct    = parseNum('hct');
   var plt    = parseNum('plt');
 
-  if (!age) errors.push('Введите возраст');
+  if (!age) errors.push({ field: 'age', msg: 'Введите возраст' });
 
   var sexRequiredScales = ['ckdepi', 'cg', 'crusade', 'cha2ds2', 'pesi'];
   var needSex = sexRequiredScales.some(function(scale) { return isScaleActive(scale); });
-  if (needSex && (!sex || sex === '')) errors.push('Выберите пол');
+  if (needSex && (!sex || sex === '')) errors.push({ field: 'sex', msg: 'Выберите пол' });
 
   if (!creat && (isScaleActive('ckdepi') || isScaleActive('cg') || isScaleActive('grace') ||
       isScaleActive('crusade') || isScaleActive('archbr') || isScaleActive('hasbled'))) {
-    errors.push('Введите креатинин');
+    errors.push({ field: 'creatinine', msg: 'Введите креатинин' });
   }
 
   if (isScaleActive('cg')) {
-    if (!weight) errors.push('Введите вес (для шкалы Кокрофт-Голт)');
-    if (!height) errors.push('Введите рост (для шкалы Кокрофт-Голт)');
+    if (!weight) errors.push({ field: 'weight', msg: 'Введите вес (для шкалы Кокрофт-Голт)' });
+    if (!height) errors.push({ field: 'height', msg: 'Введите рост (для шкалы Кокрофт-Голт)' });
   }
 
   if (isScaleActive('crusade')) {
-    if (hct === null) errors.push('Введите гематокрит (для шкалы CRUSADE)');
-    if (!weight || !creat) errors.push('Введите вес и креатинин (для расчёта КлКр в CRUSADE)');
+    if (hct === null) errors.push({ field: 'hct', msg: 'Введите гематокрит (для шкалы CRUSADE)' });
+    if (!weight) errors.push({ field: 'weight', msg: 'Введите вес (для расчёта КлКр в CRUSADE)' });
+  }
+
+  // GRACE: без АД/ЧСС результат не выводится (тихий пропуск)
+  if (isScaleActive('grace')) {
+    if (!sbp) errors.push({ field: 'sbp', msg: 'Введите систолическое АД (для GRACE)' });
+    if (!hr)  errors.push({ field: 'hr',  msg: 'Введите ЧСС (для GRACE)' });
+  }
+
+  // CRUSADE: без АД/ЧСС результат не выводится
+  if (isScaleActive('crusade')) {
+    if (!hr)  errors.push({ field: 'hr',  msg: 'Введите ЧСС (для CRUSADE)' });
+    if (!sbp) errors.push({ field: 'sbp', msg: 'Введите систолическое АД (для CRUSADE)' });
+  }
+
+  // PESI: все 5 параметров дают баллы — иначе занижение риска
+  if (isScaleActive('pesi')) {
+    if (!hr)  errors.push({ field: 'hr',        msg: 'Введите ЧСС (для PESI)' });
+    if (!sbp) errors.push({ field: 'sbp',       msg: 'Введите систолическое АД (для PESI)' });
+    if (!parseNum('pesi_rr'))   errors.push({ field: 'pesi_rr',   msg: 'Введите ЧДД (для PESI)' });
+    if (!parseNum('pesi_temp')) errors.push({ field: 'pesi_temp', msg: 'Введите температуру (для PESI)' });
+    if (!parseNum('pesi_spo2')) errors.push({ field: 'pesi_spo2', msg: 'Введите SpO₂ (для PESI)' });
+  }
+
+  // ARC-HBR: гемоглобин/тромбоциты нужны для авто-критериев
+  if (isScaleActive('archbr')) {
+    if (!hb)  errors.push({ field: 'hb',  msg: 'Введите гемоглобин (для ARC-HBR)' });
+    if (!plt) errors.push({ field: 'plt', msg: 'Введите тромбоциты (для ARC-HBR)' });
+  }
+
+  // HAS-BLED: АД нужно для авто-критерия АГ >160
+  if (isScaleActive('hasbled')) {
+    if (!sbp) errors.push({ field: 'sbp', msg: 'Введите систолическое АД (для HAS-BLED)' });
   }
 
   var resultsHTML = '';
@@ -1334,7 +1366,7 @@ function calculate() {
     cgCrcl = cgCrclTbw;
 
     if (cgCrclTbw === null) {
-      errors.push('Некорректные данные для Кокрофт-Голт (проверьте возраст <140, вес >0, креатинин >0)');
+      errors.push({ field: null, msg: 'Некорректные данные для Кокрофт-Голт (проверьте возраст <140, вес >0, креатинин >0)' });
     } else {
       var bmi = calcBMI(weight, height);
       var isOverweightForCg = (bmi !== null && bmi >= 25);
@@ -1760,9 +1792,15 @@ function calculate() {
   }
 
   if (errors.length > 0) {
-    showToast(errors.join(', '), 'error');
+    showToast(errors.map(function(e) { return e.msg; }).join(', '), 'error');
+    highlightErrorFields(errors.map(function(e) { return e.field; }));
     return;
   }
+
+  // Оранжевое предупреждение о значениях вне диапазона (не блокирует расчёт)
+  var rangeWarnings = getRangeWarnings();
+  applyRangeWarnings();
+  updateCalcButtonWarnings(rangeWarnings);
 
   document.getElementById('resultsGrid').innerHTML = resultsHTML;
   document.getElementById('copyText').textContent  = copyLines.join('\n');

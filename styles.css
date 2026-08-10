@@ -1732,3 +1732,30 @@ body.dark-theme #resetBtn:hover {
   font-weight: 700;
   box-shadow: 0 0 16px rgba(255,82,82,.6);
 }
+
+/* Подсветка незаполненных обязательных полей (после нажатия «Рассчитать») */
+.input-group.field-error input,
+.input-group.field-error select {
+  border-color: var(--red);
+  box-shadow: 0 0 0 1px var(--red), 0 0 12px rgba(224, 72, 61, 0.4);
+}
+.input-group.field-error .sex-toggle-group {
+  border-color: var(--red);
+  box-shadow: 0 0 0 1px var(--red), 0 0 12px rgba(224, 72, 61, 0.4);
+}
+
+/* Оранжевое предупреждение: значение вне реалистичного диапазона */
+.input-group.field-warning input,
+.input-group.field-warning select {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 1px var(--orange), 0 0 12px rgba(229, 142, 27, 0.4);
+}
+
+/* Кнопка «Рассчитать» с предупреждением о нереалистичных значениях */
+button.floating-calc.has-warnings {
+  background: var(--orange);
+  border-color: var(--orange-deep);
+  color: #fff;
+  white-space: normal;
+  max-width: 340px;
+}

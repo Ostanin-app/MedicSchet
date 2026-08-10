@@ -885,6 +885,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  // --- Снятие красной подсветки при заполнении поля ---
+  document.addEventListener('input', function(e) {
+    var grp = e.target && e.target.closest ? e.target.closest('.input-group') : null;
+    if (grp) grp.classList.remove('field-error');
+    applyRangeWarnings();
+    updateCalcButtonWarnings(getRangeWarnings());
+  });
+  document.addEventListener('change', function(e) {
+    var grp = e.target && e.target.closest ? e.target.closest('.input-group') : null;
+    if (grp) grp.classList.remove('field-error');
+  });
+  document.addEventListener('click', function(e) {
+    var grp = e.target && e.target.closest ? e.target.closest('.input-group') : null;
+    if (grp) grp.classList.remove('field-error');
+  });
+
   // --- Инициализация Undo ---
   initUndoTracking();
 
