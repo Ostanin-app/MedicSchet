@@ -77,10 +77,11 @@ function saveUndoState() {
     }
   });
 
-  // Авто-состояние приёмников онкологии (pesi_cancer/cap_cancer/geneva_cancer):
+  // Авто-состояние приёмников онкологии (pesi_cancer/cap_cancer/geneva_cancer)
+  // и ХОБЛ (pesi_copd):
   // сохраняем, был ли чекбокс отмечен автоматически из «узких» шкал,
   // чтобы undo и перезагрузка страницы не превращали его в «ручной».
-  ['pesi_cancer', 'cap_cancer', 'geneva_cancer'].forEach(function(id) {
+  ['pesi_cancer', 'cap_cancer', 'geneva_cancer', 'pesi_copd'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) state[id + '_auto'] = el.dataset.cancerAuto === '1';
   });
@@ -175,9 +176,9 @@ function performUndo() {
     }
   });
 
-  // Восстанавливаем авто-состояние приёмников онкологии; классы и метки
-  // «авто» дорисует autofill() → applyCancerAuto() ниже.
-  ['pesi_cancer', 'cap_cancer', 'geneva_cancer'].forEach(function(id) {
+  // Восстанавливаем авто-состояние приёмников онкологии и ХОБЛ; классы и
+  // метки «авто» дорисует autofill() → applyCancerAuto()/syncCopdAuto() ниже.
+  ['pesi_cancer', 'cap_cancer', 'geneva_cancer', 'pesi_copd'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el && prevState.hasOwnProperty(id + '_auto')) {
       if (prevState[id + '_auto']) {
@@ -1058,9 +1059,9 @@ function collectAppState() {
     }
   }
 
-  // Авто-состояние приёмников онкологии — чтобы после перезагрузки
+  // Авто-состояние приёмников онкологии и ХОБЛ — чтобы после перезагрузки
   // страницы они не превращались в «ручные».
-  ['pesi_cancer', 'cap_cancer', 'geneva_cancer'].forEach(function(id) {
+  ['pesi_cancer', 'cap_cancer', 'geneva_cancer', 'pesi_copd'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) fields[id + '_auto'] = el.dataset.cancerAuto === '1';
   });
@@ -1111,9 +1112,9 @@ function restoreAppState() {
     }
   });
 
-  // Восстанавливаем авто-состояние приёмников онкологии (классы и метки
-  // «авто» дорисует applyCancerAuto() ниже).
-  ['pesi_cancer', 'cap_cancer', 'geneva_cancer'].forEach(function(id) {
+  // Восстанавливаем авто-состояние приёмников онкологии и ХОБЛ (классы и
+  // метки «авто» дорисует applyCancerAuto()/syncCopdAuto() ниже).
+  ['pesi_cancer', 'cap_cancer', 'geneva_cancer', 'pesi_copd'].forEach(function(id) {
     var el = document.getElementById(id);
     if (!el) return;
     if (fields.hasOwnProperty(id + '_auto')) {
@@ -1136,6 +1137,9 @@ function restoreAppState() {
   // Онкология: сразу показываем подсказки ⚠️, если рак отмечен только
   // в анамнезе (без ожидания первого пересчёта).
   updateCancerWarnings();
+
+  // ХОБЛ: применяем авто-связь Caprini → PESI и подсказку сразу при загрузке.
+  syncCopdAuto();
 
   // Применяем видимость блоков шкал и их подсветку по восстановленным чекбоксам
   var scales = ['ckdepi','cg','grace','crusade','archbr','caprini','hasbled','cha2ds2','pesi','wells','geneva'];
@@ -1175,6 +1179,9 @@ function resetAllData() {
   // авто-метки/data-флаги приёмников и прячем подсказки ⚠️.
   applyCancerAuto();
   updateCancerWarnings();
+
+  // ХОБЛ: после сброса снимаем авто-метку/data-флаг PESI и прячем ⚠️.
+  syncCopdAuto();
 
   resetUndoBaseState();
 

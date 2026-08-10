@@ -827,6 +827,31 @@ function updateCancerWarnings() {
 }
 
 // ===================================================
+//  ХОБЛ: авто-связь Caprini → PESI
+// ===================================================
+// Caprini «ХОБЛ» (узкий критерий) входит в PESI «Хроническое заболевание
+// лёгких / ХОБЛ» (широкий критерий): ХОБЛ — всегда хроническое заболевание
+// лёгких, поэтому отметка в Caprini автоматически отмечает PESI.
+// Обратное НЕВЕРНО (астма и др. — не ХОБЛ), поэтому при ручной отметке
+// PESI показываем у Caprini подсказку ⚠️ — решает врач.
+// Персистинг авто-состояния — тот же паттерн, что у онкологии.
+function syncCopdAuto() {
+  // Авто-отметка PESI от Caprini (класс auto-filled — карточка PESI .cb-item)
+  setCancerAuto(document.getElementById('pesi_copd'), cb('cap_copd'), 'auto-filled');
+
+  // Подсказка у Caprini: PESI отмечен вручную, а Caprini нет
+  var icon = document.getElementById('cap_copd_warning');
+  if (icon) {
+    if (cb('pesi_copd') && !cb('cap_copd')) {
+      icon.style.display = 'inline';
+      setupTooltipTrigger(icon, 'В PESI отмечено хроническое заболевание лёгких. Если у пациента именно ХОБЛ — отметьте в Caprini.');
+    } else {
+      icon.style.display = 'none';
+    }
+  }
+}
+
+// ===================================================
 //  AUTOFILL
 // ===================================================
 function autofill() {
@@ -1175,6 +1200,9 @@ function autofill() {
 
   // Онкология: подсказки-напоминания, если рак отмечен только в анамнезе
   updateCancerWarnings();
+
+  // ХОБЛ: авто-связь Caprini → PESI + подсказка в обратную сторону
+  syncCopdAuto();
 
   // Wells ↔ Geneva: связанные пары «Кровохарканье» и «Признаки ТГВ»,
   // а также PESI ↔ Caprini выравниваются при каждом пересчёте

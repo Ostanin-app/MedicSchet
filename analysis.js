@@ -990,7 +990,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // авто-связь онкологии → PESI/Caprini срабатывала сразу при клике;
   // pesi_cancer/cap_cancer — чтобы сразу обновлялись подсказки ⚠️)
   ['cb_hf', 'cb_htn', 'cb_dm', 'cb_stroke', 'cb_embolism', 'cb_vte', 'cb_vasc', 'grace_enzymes',
-   'wells_cancer', 'geneva_cancer', 'arc_cancer', 'pesi_cancer', 'cap_cancer'].forEach(function(id) {
+   'wells_cancer', 'geneva_cancer', 'arc_cancer', 'pesi_cancer', 'cap_cancer',
+   'pesi_copd', 'cap_copd'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) {
       el.addEventListener('change', function() {
