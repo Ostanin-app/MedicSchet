@@ -673,6 +673,160 @@ function updateFieldVisibility() {
 }
 
 // ===================================================
+//  ОНКОЛОГИЯ: авто-связи Wells/Geneva/ARC-HBR → PESI/Caprini
+// ===================================================
+// «Узкие» шкалы означают активный рак (лечение сейчас/за 6 мес,
+// активное сейчас, активное за 12 мес). Если отмечена хоть одна из них,
+// «широкие» шкалы — PESI («активное или в анамнезе») и Caprini
+// («настоящее или прошлое») — выполняются точно, поэтому приёмники
+// отмечаются автоматически.
+// Обратное НЕВЕРНО: «рак в анамнезе» не означает «активный сейчас»,
+// поэтому приёмники источники не включают (там только подсказки ⚠️).
+//
+// Защита ручной отметки: если приёмник уже отмечен вручную — его не
+// трогаем (не вешаем метку «авто» и не сбрасываем при снятии источников).
+// Авто-состояние хранится в data-атрибуте el.dataset.cancerAuto и
+// переносится в снимки undo / автосохранение, чтобы пережить
+// перезагрузку страницы и отмену изменений (иначе после reload
+// приёмник стал бы считаться «ручным» и не сбрасывался бы).
+function applyCancerAuto() {
+  // Сначала Geneva как приёмник от ARC-HBR (авто-связь ARC → Geneva).
+  // ВАЖНО: Geneva имеет двойную роль — приёмник от ARC и источник для
+  // PESI/Caprini. Обрабатываем её ДО вычисления cancerActive, иначе при
+  // снятии ARC-HBR ещё отмеченная авто-Geneva «поддержит» PESI/Caprini
+  // и они не сбросятся (баг «застрявших» авто-отметок).
+  setCancerAuto(document.getElementById('geneva_cancer'), cb('arc_cancer'), 'auto-cb');
+
+  // «Широкие» приёмники PESI/Caprini: отмечаются, если рак активен
+  // (отмечена хотя бы одна «узкая» шкала — уже в актуальном состоянии).
+  var cancerActive = cb('wells_cancer') || cb('geneva_cancer') || cb('arc_cancer');
+  setCancerAuto(document.getElementById('pesi_cancer'), cancerActive, 'auto-filled');
+  setCancerAuto(document.getElementById('cap_cancer'),  cancerActive, 'auto-cb');
+}
+
+// Общая логика авто-включения приёмника онкологии:
+// active — следует ли отметить автоматически; autoClass — класс жёлтой
+// метки (auto-filled для карточек PESI, auto-cb для остальных шкал).
+// Защита ручной отметки: если приёмник уже отмечен вручную — не трогаем
+// (не вешаем метку «авто» и не сбрасываем при снятии источников).
+// Авто-состояние хранится в data-атрибуте el.dataset.cancerAuto и
+// переносится в снимки undo / автосохранение, чтобы пережить
+// перезагрузку страницы и отмену изменений (иначе после reload
+// приёмник стал бы считаться «ручным» и не сбрасывался бы).
+function setCancerAuto(el, active, autoClass) {
+  if (!el) return;
+  var label = el.closest('label');
+  if (!label) return;
+  var wasAuto = label.classList.contains(autoClass) || el.dataset.cancerAuto === '1';
+
+  if (active) {
+    if (!el.checked) {
+      // Приёмник выключен — включаем автоматически
+      el.checked = true;
+      flashField(el);
+      label.classList.add(autoClass);
+      addCancerAutoTag(label);
+      el.dataset.cancerAuto = '1';
+    } else if (wasAuto) {
+      // Отмечен и был авто (например, класс слетел после перезагрузки
+      // страницы) — восстанавливаем метку «авто» и data-флаг
+      label.classList.add(autoClass);
+      addCancerAutoTag(label);
+      el.dataset.cancerAuto = '1';
+    }
+    // Если приёмник отмечен вручную — не трогаем (остаётся ручным).
+  } else {
+    if (wasAuto) {
+      // Источники сняты — авто-отметка снимается, приёмник снова ручной
+      el.checked = false;
+      label.classList.remove(autoClass);
+      removeCancerAutoTag(label);
+      delete el.dataset.cancerAuto;
+    }
+    // Ручные отметки не трогаем.
+  }
+}
+
+// Жёлтая метка «авто» на карточке-чекбоксе (перед .pts или в .cb-label)
+function addCancerAutoTag(label) {
+  if (label.querySelector('.auto-tag')) return;
+  var span = document.createElement('span');
+  span.className = 'auto-tag';
+  span.textContent = 'авто';
+  var pts = label.querySelector('.pts');
+  if (pts) {
+    label.insertBefore(span, pts);
+  } else {
+    var cbLabel = label.querySelector('.cb-label');
+    if (cbLabel) cbLabel.appendChild(span);
+    else label.appendChild(span);
+  }
+}
+
+function removeCancerAutoTag(label) {
+  var tag = label.querySelector('.auto-tag');
+  if (tag) tag.remove();
+}
+
+// Подсказки в обратную сторону: если «рак в анамнезе» отмечен вручную
+// в PESI/Caprini, а ни одна из «узких» шкал (активный рак) не отмечена —
+// показываем у Wells/Geneva/ARC-HBR иконку ⚠️ с индивидуальной подсказкой
+// под критерий каждой шкалы (простые формулировки, без дословных копий).
+// Дополнительно: уведомления между «узкими» шкалами — когда отмечена одна
+// узкая шкала, а у другой критерий может выполняться (но не гарантирован),
+// поэтому автоотметки нет — только напоминание врачу.
+// Пункты НЕ отмечаем автоматически — это решает врач.
+function updateCancerWarnings() {
+  var wideChecked = cb('pesi_cancer') || cb('cap_cancer');
+  var narrowChecked = cb('wells_cancer') || cb('geneva_cancer') || cb('arc_cancer');
+
+  var texts = {
+    'wells_cancer_warning': null,
+    'geneva_cancer_warning': null,
+    'arc_cancer_warning': null
+  };
+
+  // «Рак в анамнезе»: PESI/Caprini отмечены, ни одна узкая шкала не отмечена
+  if (wideChecked && !narrowChecked) {
+    texts['wells_cancer_warning'] = 'Рак в анамнезе. Отметьте в Wells, если рак лечится сейчас, лечился в последние полгода или назначена паллиативная помощь.';
+    texts['geneva_cancer_warning'] = 'Рак в анамнезе. Отметьте в Geneva, если рак активен сейчас или считается излеченным меньше года назад.';
+    texts['arc_cancer_warning'] = 'Рак в анамнезе. Отметьте в ARC-HBR, если рак был активен в последние 12 месяцев (кроме немеланомного рака кожи).';
+  }
+
+  // ARC-HBR отмечен → Wells: Wells требует лечения, автоотметка небезопасна
+  if (cb('arc_cancer') && !cb('wells_cancer')) {
+    texts['wells_cancer_warning'] = 'В оригинальных источниках (Wells 2000, NICE 2020) критерий сформулирован как: "Malignancy (on treatment, treated in the last 6 months, or palliative)". Это означает, что пункт применяется при наличии активного противоопухолевого лечения (включая паллиативное) в настоящее время или в течение последних 6 месяцев.';
+  }
+
+  // Wells отмечен → Geneva
+  if (cb('wells_cancer') && !cb('geneva_cancer')) {
+    texts['geneva_cancer_warning'] = 'Отмечено в Wells. Если заболевание активно сейчас или считается излеченным менее года назад, отметьте Geneva.';
+  }
+
+  // Geneva отмечена → ARC-HBR (ARC-HBR исключает немеланомный рак кожи,
+  // поэтому автоотметка небезопасна)
+  if (cb('geneva_cancer') && !cb('arc_cancer')) {
+    texts['arc_cancer_warning'] = 'Критерий ARC-HBR: активное злокачественное новообразование (кроме немеланомного рака кожи) за последние 12 месяцев. Отметьте, если это выполняется.';
+  }
+
+  // Только Wells отмечен → ARC-HBR
+  if (cb('wells_cancer') && !cb('geneva_cancer') && !cb('arc_cancer')) {
+    texts['arc_cancer_warning'] = 'Отмечено в Wells. Если диагноз установлен в последние 12 месяцев или лечение проводится сейчас, отметьте ARC-HBR.';
+  }
+
+  Object.keys(texts).forEach(function(id) {
+    var icon = document.getElementById(id);
+    if (!icon) return;
+    if (texts[id]) {
+      icon.style.display = 'inline';
+      setupTooltipTrigger(icon, texts[id]);
+    } else {
+      icon.style.display = 'none';
+    }
+  });
+}
+
+// ===================================================
 //  AUTOFILL
 // ===================================================
 function autofill() {
@@ -1015,6 +1169,17 @@ function autofill() {
     hfCheck.checked = cb('cb_hf');
     if (cb('cb_hf')) flashField(hfCheck);
   }
+
+  // Онкология: узкие шкалы (активный рак) → широкие (PESI/Caprini)
+  applyCancerAuto();
+
+  // Онкология: подсказки-напоминания, если рак отмечен только в анамнезе
+  updateCancerWarnings();
+
+  // Wells ↔ Geneva: связанные пары «Кровохарканье» и «Признаки ТГВ»,
+  // а также PESI ↔ Caprini выравниваются при каждом пересчёте
+  // (и после отмены изменений).
+  syncLinkedCheckboxes();
 
   syncSexFromHidden();
   skipUndo = prevSkipUndo;

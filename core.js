@@ -77,6 +77,14 @@ function saveUndoState() {
     }
   });
 
+  // Авто-состояние приёмников онкологии (pesi_cancer/cap_cancer/geneva_cancer):
+  // сохраняем, был ли чекбокс отмечен автоматически из «узких» шкал,
+  // чтобы undo и перезагрузка страницы не превращали его в «ручной».
+  ['pesi_cancer', 'cap_cancer', 'geneva_cancer'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) state[id + '_auto'] = el.dataset.cancerAuto === '1';
+  });
+
   undoStack.push(state);
   if (undoStack.length > 11) {
     undoStack.shift();
@@ -163,6 +171,19 @@ function performUndo() {
         el.checked = prevState[id];
       } else if (el.tagName === 'SELECT') {
         el.value = prevState[id];
+      }
+    }
+  });
+
+  // Восстанавливаем авто-состояние приёмников онкологии; классы и метки
+  // «авто» дорисует autofill() → applyCancerAuto() ниже.
+  ['pesi_cancer', 'cap_cancer', 'geneva_cancer'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el && prevState.hasOwnProperty(id + '_auto')) {
+      if (prevState[id + '_auto']) {
+        el.dataset.cancerAuto = '1';
+      } else {
+        delete el.dataset.cancerAuto;
       }
     }
   });
@@ -601,6 +622,34 @@ function setCb(id, val) {
   if (el) el.checked = val;
 }
 
+// Синхронизация связанных пар чекбоксов:
+// - Wells ↔ Geneva: «Кровохарканье» и «Клинические признаки ТГВ» —
+//   одни и те же клинические признаки в обеих шкалах.
+// - PESI ↔ Caprini: «Злокачественная опухоль (активное/в анамнезе)» и
+//   «Злокачественная опухоль (настоящее или прошлое)» — синонимы.
+// Отметка или снятие одного автоматически применяется к парному
+// (двусторонняя связь).
+// В штатной работе пара всегда согласована (её синхронизируют слушатели
+// change), поэтому здесь при рассинхроне (возможен только в старых
+// сохранениях) включаем оба чекбокса.
+function syncLinkedCheckboxes() {
+  var pairs = [
+    ['wells_hemoptysis', 'geneva_hemoptysis'],
+    ['wells_dvt_signs',  'geneva_dvt_signs'],
+    ['pesi_cancer',      'cap_cancer']
+  ];
+  pairs.forEach(function(pair) {
+    var a = document.getElementById(pair[0]);
+    var b = document.getElementById(pair[1]);
+    if (!a || !b) return;
+    if (a.checked !== b.checked) {
+      var combined = a.checked || b.checked;
+      a.checked = combined;
+      b.checked = combined;
+    }
+  });
+}
+
 function toggleScale(name, el) {
   var lbl = document.getElementById('toggle_' + name);
   var blk = document.getElementById('block_' + name);
@@ -1008,6 +1057,14 @@ function collectAppState() {
       fields[el.id] = el.value;
     }
   }
+
+  // Авто-состояние приёмников онкологии — чтобы после перезагрузки
+  // страницы они не превращались в «ручные».
+  ['pesi_cancer', 'cap_cancer', 'geneva_cancer'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) fields[id + '_auto'] = el.dataset.cancerAuto === '1';
+  });
+
   return { version: APP_STATE_VERSION, fields: fields };
 }
 
@@ -1054,6 +1111,32 @@ function restoreAppState() {
     }
   });
 
+  // Восстанавливаем авто-состояние приёмников онкологии (классы и метки
+  // «авто» дорисует applyCancerAuto() ниже).
+  ['pesi_cancer', 'cap_cancer', 'geneva_cancer'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (fields.hasOwnProperty(id + '_auto')) {
+      if (fields[id + '_auto']) {
+        el.dataset.cancerAuto = '1';
+      } else {
+        delete el.dataset.cancerAuto;
+      }
+    }
+  });
+
+  // Выравниваем связанные пары Wells ↔ Geneva (кровохарканье, признаки ТГВ),
+  // а также PESI ↔ Caprini: старые сохранения могли быть рассинхронизированы.
+  syncLinkedCheckboxes();
+
+  // Онкология: применяем авто-связи узких шкал → PESI/Caprini, чтобы
+  // при загрузке страницы состояние онкологии было сразу согласовано.
+  applyCancerAuto();
+
+  // Онкология: сразу показываем подсказки ⚠️, если рак отмечен только
+  // в анамнезе (без ожидания первого пересчёта).
+  updateCancerWarnings();
+
   // Применяем видимость блоков шкал и их подсветку по восстановленным чекбоксам
   var scales = ['ckdepi','cg','grace','crusade','archbr','caprini','hasbled','cha2ds2','pesi','wells','geneva'];
   scales.forEach(function(name) {
@@ -1087,6 +1170,12 @@ function resetAllData() {
   updateFieldVisibility();
   updateGroupButtonsUI();
   updateAnalysisPanel();
+
+  // Онкология: после сброса все источники выключены — снимаем остаточные
+  // авто-метки/data-флаги приёмников и прячем подсказки ⚠️.
+  applyCancerAuto();
+  updateCancerWarnings();
+
   resetUndoBaseState();
 
   // После сброса — плавно наверх, чтобы было видно начало страницы

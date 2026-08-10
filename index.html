@@ -389,7 +389,8 @@
 
         <label class="scale-cb-item">
           <input type="checkbox" id="arc_cancer">
-          <span>Активное онкологическое заболевание (кроме немеланомного рака кожи) за последние 12 мес.</span>
+          <span>Активное злокачественное новообразование (кроме немеланомного рака кожи) за последние 12 мес.</span>
+          <span class="warning-icon" id="arc_cancer_warning" style="display:none; margin-left:6px; cursor:help;">⚠️</span>
         </label>
 
         <label class="scale-cb-item">
@@ -866,9 +867,10 @@
           <input type="checkbox" id="wells_cancer">
           <span class="scale-cb-text">
             Злокачественное новообразование
-            <span class="scale-cb-hint">Лечение в последние 6 месяцев или паллиативная помощь</span>
+            <span class="scale-cb-hint">Текущее лечение, лечение в последние 6 месяцев или паллиативная помощь</span>
           </span>
           <span class="pts">+1,0</span>
+          <span class="warning-icon" id="wells_cancer_warning" style="display:none; margin-left:6px; cursor:help;">⚠️</span>
         </label>
 
       </div>
@@ -908,9 +910,10 @@
           <input type="checkbox" id="geneva_cancer">
           <span class="scale-cb-text">
             Активное злокачественное новообразование
-            <span class="scale-cb-hint">Солидное или гематологическое, активное или в ремиссии &lt;1 года</span>
+            <span class="scale-cb-hint">Солидное или гематологическое, активное сейчас или считающееся излеченным &lt;1 года назад</span>
           </span>
           <span class="pts">+2</span>
+          <span class="warning-icon" id="geneva_cancer_warning" style="display:none; margin-left:6px; cursor:help;">⚠️</span>
         </label>
 
       </div>

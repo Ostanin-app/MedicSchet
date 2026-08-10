@@ -862,6 +862,29 @@ document.addEventListener('DOMContentLoaded', function() {
   // --- Инициализация дисклеймера ---
   checkDisclaimer();
 
+  // --- Связанные пары Wells ↔ Geneva (кровохарканье, признаки ТГВ) ---
+  // Отметка или снятие любого чекбокса пары мгновенно применяется к парному
+  // (значение изменившегося чекбокса распространяется на второй).
+  // Регистрируются ДО initUndoTracking(), чтобы undo-снимки всегда
+  // содержали согласованную пару (иначе отмена ломала бы связку).
+  var linkedPairs = {
+    'wells_hemoptysis': 'geneva_hemoptysis',
+    'geneva_hemoptysis': 'wells_hemoptysis',
+    'wells_dvt_signs':  'geneva_dvt_signs',
+    'geneva_dvt_signs': 'wells_dvt_signs',
+    'pesi_cancer':      'cap_cancer',
+    'cap_cancer':       'pesi_cancer'
+  };
+  Object.keys(linkedPairs).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('change', function() {
+        var tgt = document.getElementById(linkedPairs[id]);
+        if (tgt && tgt.checked !== el.checked) tgt.checked = el.checked;
+      });
+    }
+  });
+
   // --- Инициализация Undo ---
   initUndoTracking();
 
@@ -962,8 +985,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // --- Обработчики общих чекбоксов ---
-  ['cb_hf', 'cb_htn', 'cb_dm', 'cb_stroke', 'cb_embolism', 'cb_vte', 'cb_vasc', 'grace_enzymes'].forEach(function(id) {
+  // --- Обработчики общих чекбоксов и онкологических источников ---
+  // (wells_cancer/geneva_cancer/arc_cancer вызывают autofill, чтобы
+  // авто-связь онкологии → PESI/Caprini срабатывала сразу при клике;
+  // pesi_cancer/cap_cancer — чтобы сразу обновлялись подсказки ⚠️)
+  ['cb_hf', 'cb_htn', 'cb_dm', 'cb_stroke', 'cb_embolism', 'cb_vte', 'cb_vasc', 'grace_enzymes',
+   'wells_cancer', 'geneva_cancer', 'arc_cancer', 'pesi_cancer', 'cap_cancer'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) {
       el.addEventListener('change', function() {
