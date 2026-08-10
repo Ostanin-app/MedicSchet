@@ -852,6 +852,20 @@ function syncCopdAuto() {
 }
 
 // ===================================================
+//  ПРИЗНАКИ ТГВ → «Отёчность ног» Caprini
+// ===================================================
+// «Клинические признаки ТГВ» (Wells) или «боль при пальпации глубоких вен
+// и односторонний отёк» (Geneva) включают отёк ноги — поэтому Caprini
+// «Отёчность ног в настоящее время» выполняется точно: авто-отметка.
+// Обратное НЕВЕРНО (простой отёк без боли при пальпации ≠ ТГВ), поэтому
+// Caprini на Wells/Geneva не влияет (только однонаправленно).
+// Персистинг авто-состояния — тот же паттерн, что у онкологии/ХОБЛ.
+function syncDvtEdemaAuto() {
+  var dvtSigns = cb('wells_dvt_signs') || cb('geneva_dvt_signs');
+  setCancerAuto(document.getElementById('cap_swollen_legs'), dvtSigns, 'auto-cb');
+}
+
+// ===================================================
 //  AUTOFILL
 // ===================================================
 function autofill() {
@@ -930,8 +944,8 @@ function autofill() {
   if (cb('cb_htn')) flashField(document.getElementById('cha_htn'));
   setCb('cha_dm', cb('cb_dm'));
   if (cb('cb_dm')) flashField(document.getElementById('cha_dm'));
-  setCb('cha_stroke', cb('cb_stroke') || cb('cb_embolism'));
-  if (cb('cb_stroke') || cb('cb_embolism')) flashField(document.getElementById('cha_stroke'));
+  setCb('cha_stroke', cb('cb_stroke') || cb('cb_tia') || cb('cb_embolism'));
+  if (cb('cb_stroke') || cb('cb_tia') || cb('cb_embolism')) flashField(document.getElementById('cha_stroke'));
   setCb('cha_vasc', cb('cb_vasc'));
   if (cb('cb_vasc')) flashField(document.getElementById('cha_vasc'));
 
@@ -1012,9 +1026,10 @@ function autofill() {
     }
   }
 
-  // Caprini «Инсульт (давностью до 1 мес.)»: если в общих данных отмечен инсульт —
-  // показываем уведомление, но пункт НЕ автозаполняем (нужна давность < 1 мес.),
-  // врач отмечает его вручную при необходимости.
+  // Caprini «Инсульт (давностью до 1 мес.)»: если в общих данных отмечен
+  // инсульт (ТИА не триггерит — пункт про инсульт) — показываем уведомление,
+  // но пункт НЕ автозаполняем (нужна давность < 1 мес.), врач отмечает его
+  // вручную при необходимости.
   var capStrokeWarning = document.getElementById('cap_stroke_warning');
   if (capStrokeWarning) {
     if (cb('cb_stroke')) {
@@ -1203,6 +1218,9 @@ function autofill() {
 
   // ХОБЛ: авто-связь Caprini → PESI + подсказка в обратную сторону
   syncCopdAuto();
+
+  // Признаки ТГВ (Wells/Geneva) → «Отёчность ног» Caprini
+  syncDvtEdemaAuto();
 
   // Wells ↔ Geneva: связанные пары «Кровохарканье» и «Признаки ТГВ»,
   // а также PESI ↔ Caprini выравниваются при каждом пересчёте

@@ -29,7 +29,7 @@ function saveUndoState() {
   var sexInput = document.getElementById('sex');
   if (sexInput) state['sex'] = sexInput.value;
 
-  var commonCbIds = ['cb_dm','cb_hf','cb_htn','cb_stroke','cb_embolism','cb_vte','cb_vasc','cb_verapamil'];
+  var commonCbIds = ['cb_dm','cb_hf','cb_htn','cb_stroke','cb_tia','cb_embolism','cb_vte','cb_vasc','cb_verapamil'];
   commonCbIds.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) state[id] = el.checked;
@@ -81,7 +81,7 @@ function saveUndoState() {
   // и ХОБЛ (pesi_copd):
   // сохраняем, был ли чекбокс отмечен автоматически из «узких» шкал,
   // чтобы undo и перезагрузка страницы не превращали его в «ручной».
-  ['pesi_cancer', 'cap_cancer', 'geneva_cancer', 'pesi_copd'].forEach(function(id) {
+  ['pesi_cancer', 'cap_cancer', 'geneva_cancer', 'pesi_copd', 'cap_swollen_legs'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) state[id + '_auto'] = el.dataset.cancerAuto === '1';
   });
@@ -126,7 +126,7 @@ function performUndo() {
   }
   syncSexFromHidden();
 
-  var commonCbIds = ['cb_dm','cb_hf','cb_htn','cb_stroke','cb_embolism','cb_vte','cb_vasc','cb_verapamil'];
+  var commonCbIds = ['cb_dm','cb_hf','cb_htn','cb_stroke','cb_tia','cb_embolism','cb_vte','cb_vasc','cb_verapamil'];
   commonCbIds.forEach(function(id) {
     var el = document.getElementById(id);
     if (el && prevState.hasOwnProperty(id)) {
@@ -178,7 +178,7 @@ function performUndo() {
 
   // Восстанавливаем авто-состояние приёмников онкологии и ХОБЛ; классы и
   // метки «авто» дорисует autofill() → applyCancerAuto()/syncCopdAuto() ниже.
-  ['pesi_cancer', 'cap_cancer', 'geneva_cancer', 'pesi_copd'].forEach(function(id) {
+  ['pesi_cancer', 'cap_cancer', 'geneva_cancer', 'pesi_copd', 'cap_swollen_legs'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el && prevState.hasOwnProperty(id + '_auto')) {
       if (prevState[id + '_auto']) {
@@ -253,7 +253,7 @@ function initUndoTracking() {
   });
 
   var allTrackedIds = [
-    'cb_dm','cb_hf','cb_htn','cb_stroke','cb_embolism','cb_vte','cb_vasc','cb_verapamil',
+    'cb_dm','cb_hf','cb_htn','cb_stroke','cb_tia','cb_embolism','cb_vte','cb_vasc','cb_verapamil',
     'grace_killip',
     'grace_arrest','grace_st','grace_enzymes',
     'crusade_female','crusade_hf','crusade_vasc','crusade_dm',
@@ -347,7 +347,7 @@ function resetAllFields() {
   document.getElementById('sex').value = '';
   syncSexFromHidden();
 
-  var commonCbs = ['cb_dm','cb_hf','cb_htn','cb_stroke','cb_embolism','cb_vte','cb_vasc','cb_verapamil'];
+  var commonCbs = ['cb_dm','cb_hf','cb_htn','cb_stroke','cb_tia','cb_embolism','cb_vte','cb_vasc','cb_verapamil'];
   commonCbs.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.checked = false;
@@ -1061,7 +1061,7 @@ function collectAppState() {
 
   // Авто-состояние приёмников онкологии и ХОБЛ — чтобы после перезагрузки
   // страницы они не превращались в «ручные».
-  ['pesi_cancer', 'cap_cancer', 'geneva_cancer', 'pesi_copd'].forEach(function(id) {
+  ['pesi_cancer', 'cap_cancer', 'geneva_cancer', 'pesi_copd', 'cap_swollen_legs'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) fields[id + '_auto'] = el.dataset.cancerAuto === '1';
   });
@@ -1114,7 +1114,7 @@ function restoreAppState() {
 
   // Восстанавливаем авто-состояние приёмников онкологии и ХОБЛ (классы и
   // метки «авто» дорисует applyCancerAuto()/syncCopdAuto() ниже).
-  ['pesi_cancer', 'cap_cancer', 'geneva_cancer', 'pesi_copd'].forEach(function(id) {
+  ['pesi_cancer', 'cap_cancer', 'geneva_cancer', 'pesi_copd', 'cap_swollen_legs'].forEach(function(id) {
     var el = document.getElementById(id);
     if (!el) return;
     if (fields.hasOwnProperty(id + '_auto')) {
@@ -1140,6 +1140,9 @@ function restoreAppState() {
 
   // ХОБЛ: применяем авто-связь Caprini → PESI и подсказку сразу при загрузке.
   syncCopdAuto();
+
+  // Признаки ТГВ → «Отёчность ног» Caprini: применяем авто-связь сразу.
+  syncDvtEdemaAuto();
 
   // Применяем видимость блоков шкал и их подсветку по восстановленным чекбоксам
   var scales = ['ckdepi','cg','grace','crusade','archbr','caprini','hasbled','cha2ds2','pesi','wells','geneva'];
@@ -1182,6 +1185,9 @@ function resetAllData() {
 
   // ХОБЛ: после сброса снимаем авто-метку/data-флаг PESI и прячем ⚠️.
   syncCopdAuto();
+
+  // Признаки ТГВ: после сброса снимаем авто-метку «Отёчности ног» Caprini.
+  syncDvtEdemaAuto();
 
   resetUndoBaseState();
 
