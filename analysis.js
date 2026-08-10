@@ -992,7 +992,9 @@ document.addEventListener('DOMContentLoaded', function() {
   ['cb_hf', 'cb_htn', 'cb_dm', 'cb_stroke', 'cb_tia', 'cb_embolism', 'cb_vte', 'cb_vasc', 'grace_enzymes',
    'wells_cancer', 'geneva_cancer', 'arc_cancer', 'pesi_cancer', 'cap_cancer',
    'pesi_copd', 'cap_copd',
-   'wells_dvt_signs', 'geneva_dvt_signs', 'cap_swollen_legs'].forEach(function(id) {
+   'wells_dvt_signs', 'geneva_dvt_signs', 'cap_swollen_legs',
+   'cap_bedrest72', 'wells_immob',
+   'arc_cirrhosis', 'hb_liver'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) {
       el.addEventListener('change', function() {
