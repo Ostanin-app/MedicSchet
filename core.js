@@ -745,6 +745,14 @@ function updateCalcButtonWarnings(warnings) {
   }
 }
 
+document.getElementById('clearScalesBtn').addEventListener('click', function() {
+  document.querySelectorAll('#scaleSelector input[type="checkbox"]').forEach(function(cb) {
+    cb.checked = false;
+    var name = cb.id.replace('scale_','');
+    toggleScale(name, cb);
+  });
+});
+
 function toggleScale(name, el) {
   var lbl = document.getElementById('toggle_' + name);
   var blk = document.getElementById('block_' + name);
