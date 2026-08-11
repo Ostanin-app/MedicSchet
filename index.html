@@ -114,6 +114,9 @@
         <label class="scale-toggle active" id="toggle_caprini">
           <input type="checkbox" id="scale_caprini" checked onchange="toggleScale('caprini',this)">Caprini
         </label>
+        <label class="scale-toggle active" id="toggle_precise">
+          <input type="checkbox" id="scale_precise" checked onchange="toggleScale('precise',this)">PRECISE-DAPT
+        </label>
         <label class="scale-toggle active" id="toggle_hasbled">
           <input type="checkbox" id="scale_hasbled" checked onchange="toggleScale('hasbled',this)">HAS-BLED
         </label>
@@ -467,6 +470,39 @@
           <span>Любой ишемический инсульт (любой давности, не отвечающий большому критерию)</span>
         </label>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PRECISE-DAPT ===== -->
+  <div class="scale-block" id="block_precise">
+    <div class="scale-block-header">📉 PRECISE-DAPT — риск кровотечения при ДАТТ после ЧКВ</div>
+    <div class="scale-block-body">
+      <div class="input-grid" style="margin-bottom:10px;">
+        <div class="input-group">
+          <label>Возраст <span class="unit">лет</span></label>
+          <input type="text" id="precise_age" placeholder="65">
+        </div>
+        <div class="input-group">
+          <label>Креатинин <span class="unit">мкмоль/л</span></label>
+          <input type="text" id="creatinine" placeholder="90">
+        </div>
+        <div class="input-group">
+          <label>Гемоглобин <span class="unit">г/л</span> <span style="font-size:11px;color:var(--muted)">(шкала: г/дл)</span></label>
+          <input type="text" id="hb" placeholder="130">
+        </div>
+        <div class="input-group">
+          <label>Лейкоциты <span class="unit">×10⁹/л</span></label>
+          <input type="text" id="wbc" placeholder="7.5">
+        </div>
+      </div>
+      <div class="checkbox-grid">
+        <label class="cb-item">
+          <input type="checkbox" id="precise_bleed">
+          <div>
+            <div class="cb-label">Предыдущее спонтанное кровотечение</div>
+          </div>
+        </label>
       </div>
     </div>
   </div>

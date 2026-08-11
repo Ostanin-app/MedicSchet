@@ -696,7 +696,8 @@ var FIELD_RANGES = [
   { id: 'na_measured', min: 100, max: 180,  label: 'натрий' },
   { id: 'glucose',     min: 1,   max: 50,   label: 'глюкоза' },
   { id: 'potassium',   min: 1,   max: 10,   label: 'калий' },
-  { id: 'magnesium',   min: 0.1, max: 5,    label: 'магний' }
+  { id: 'magnesium',   min: 0.1, max: 5,    label: 'магний' },
+  { id: 'wbc',         min: 0.5, max: 50,   label: 'лейкоциты' }
 ];
 
 // Возвращает [{ id, label }] для полей, значение которых заполнено и вне [min, max].
@@ -753,6 +754,26 @@ document.getElementById('clearScalesBtn').addEventListener('click', function() {
   });
 });
 
+function calculatePreciseDapt() {
+  var age = parseNum('precise_age') || parseNum('age');
+  var creat = parseNum('creatinine');
+  var hbRaw = parseNum('hb');
+  var hb = hbRaw ? hbRaw / 10 : null;
+  var wbc = parseNum('wbc');
+  var bleed = document.getElementById('precise_bleed').checked ? 1 : 0;
+  if (!age || creat === null || hb === null || wbc === null) return null;
+  var ptsAge = Math.max(0, Math.min(19, (age - 50) / 40 * 19));
+  var ptsCr = Math.max(0, Math.min(25, (100 - (creat * 0.0113)) / 100 * 25));
+  var ptsHb = Math.max(0, Math.min(15, (12 - hb) / 2 * 15));
+  var ptsWbc = Math.max(0, Math.min(15, (wbc - 5) / 15 * 15));
+  var ptsBleed = bleed ? 26 : 0;
+  var total = ptsAge + ptsCr + ptsHb + ptsWbc + ptsBleed;
+  return {
+    score: Math.round(total),
+    risk: total >= 25 ? 'high' : total >= 17 ? 'moderate' : total <= 10 ? 'verylow' : 'low',
+    age: age, crCl: Math.round(parseFloat(((140 - age) * (parseNum('weight') || 70) * (document.getElementById('sex').value === 'f' ? 0.85 : 1)) / ((creat || 1) / 88.4))), hb: hb ? hb.toFixed(1) : null, wbc: wbc, bleed: bleed
+  };
+}
 function toggleScale(name, el) {
   var lbl = document.getElementById('toggle_' + name);
   var blk = document.getElementById('block_' + name);

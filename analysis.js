@@ -18,7 +18,8 @@ const OCR_INDICATORS = [
   { keys: ['калий', 'k', 'potassium', 'калий (ммоль/л)', 'k+'], field: 'potassium', unitExpected: 'ммоль/л' },
   { keys: ['магний', 'mg', 'magnesium', 'магний (ммоль/л)', 'mg2+'], field: 'magnesium', unitExpected: 'ммоль/л' },
   { keys: ['кфк', 'креатинфосфокиназа', 'креатинкиназа', 'ck', 'ck-nac', 'кфк общая'], field: 'ck_total', unitExpected: 'Ед/л' },
-  { keys: ['кфк-мв', 'кфк мв', 'ck-mb', 'kk-mb', 'кк-мв', 'kk', 'mb'], field: 'ck_mb', unitExpected: 'Ед/л' }
+  { keys: ['кфк-мв', 'кфк мв', 'ck-mb', 'kk-mb', 'кк-мв', 'kk', 'mb'], field: 'ck_mb', unitExpected: 'Ед/л' },
+  { keys: ['лейкоциты', 'wbc', 'leukocytes', 'лейкоциты (×10⁹/л)'], field: 'wbc', unitExpected: '×10⁹/л' }
 ];
 
 // ===================================================
