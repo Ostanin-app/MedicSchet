@@ -17,7 +17,7 @@ function saveUndoState() {
   var state = {};
 
   var inputIds = [
-    'age','height','weight','sbp','hr','creatinine','hb','hct','plt',
+    'age','height','weight','sbp','hr','creatinine','hb','hct','plt','wbc',
     'pesi_rr','pesi_temp','pesi_spo2','emrPaste','ck_total','ck_mb',
     'na_measured','glucose','potassium','magnesium'
   ];
@@ -63,7 +63,8 @@ function saveUndoState() {
     'wells_prev_dvt','wells_hemoptysis','wells_cancer',
     'geneva_age','geneva_prev_dvt','geneva_surgery','geneva_cancer',
     'geneva_leg_pain','geneva_hemoptysis','geneva_hr75','geneva_hr95',
-    'geneva_dvt_signs'
+    'geneva_dvt_signs',
+    'precise_bleed'
   ];
 
   allScaleCbIds.forEach(function(id) {
@@ -109,7 +110,7 @@ function performUndo() {
   skipUndo = true;
 
   var inputIds = [
-    'age','height','weight','sbp','hr','creatinine','hb','hct','plt',
+    'age','height','weight','sbp','hr','creatinine','hb','hct','plt','wbc',
     'pesi_rr','pesi_temp','pesi_spo2','emrPaste','ck_total','ck_mb',
     'na_measured','glucose','potassium','magnesium'
   ];
@@ -162,7 +163,8 @@ function performUndo() {
     'wells_prev_dvt','wells_hemoptysis','wells_cancer',
     'geneva_age','geneva_prev_dvt','geneva_surgery','geneva_cancer',
     'geneva_leg_pain','geneva_hemoptysis','geneva_hr75','geneva_hr95',
-    'geneva_dvt_signs'
+    'geneva_dvt_signs',
+    'precise_bleed'
   ];
 
   allScaleCbIds.forEach(function(id) {
@@ -245,7 +247,7 @@ document.addEventListener('keydown', function(e) {
 
 function initUndoTracking() {
   var inputFields = [
-    'age','height','weight','sbp','hr','creatinine','hb','hct','plt',
+    'age','height','weight','sbp','hr','creatinine','hb','hct','plt','wbc',
     'pesi_rr','pesi_temp','pesi_spo2','emrPaste','ck_total','ck_mb',
     'na_measured','glucose','potassium','magnesium'
   ];
@@ -287,7 +289,8 @@ function initUndoTracking() {
     'wells_prev_dvt','wells_hemoptysis','wells_cancer',
     'geneva_age','geneva_prev_dvt','geneva_surgery','geneva_cancer',
     'geneva_leg_pain','geneva_hemoptysis','geneva_hr75','geneva_hr95',
-    'geneva_dvt_signs'
+    'geneva_dvt_signs',
+    'precise_bleed'
   ];
 
   allTrackedIds.forEach(function(id) {
@@ -343,7 +346,7 @@ function toggleDarkMode() {
 //  ДЕМОНСТРАЦИОННЫЕ СЦЕНАРИИ
 // ===================================================
 function resetAllFields() {
-  var inputIds = ['age','height','weight','sbp','hr','creatinine','hb','hct','plt',
+  var inputIds = ['age','height','weight','sbp','hr','creatinine','hb','hct','plt','wbc',
     'pesi_rr','pesi_temp','pesi_spo2','ck_total','ck_mb','na_measured','glucose','potassium','magnesium'];
   inputIds.forEach(function(id) {
     var el = document.getElementById(id);
@@ -379,7 +382,8 @@ function resetAllFields() {
     'wells_prev_dvt','wells_hemoptysis','wells_cancer',
     'geneva_age','geneva_prev_dvt','geneva_surgery','geneva_cancer',
     'geneva_leg_pain','geneva_hemoptysis','geneva_hr75','geneva_hr95',
-    'geneva_dvt_signs'
+    'geneva_dvt_signs',
+    'precise_bleed'
   ];
   scaleCbs.forEach(function(id) {
     var el = document.getElementById(id);
@@ -408,7 +412,7 @@ function fillDemo(scenario) {
   resetAllFields();
   undoStack = [];
 
-  var allScales = ['ckdepi','cg','grace','crusade','archbr','caprini','hasbled','cha2ds2','pesi','wells','geneva'];
+  var allScales = ['ckdepi','cg','grace','crusade','archbr','caprini','hasbled','cha2ds2','pesi','wells','geneva','precise'];
   allScales.forEach(function(scale) {
     var toggleEl = document.querySelector('#toggle_' + scale + ' input');
     if (toggleEl) {
@@ -435,6 +439,7 @@ function fillDemo(scenario) {
     document.getElementById('grace_enzymes').checked = true;
     document.getElementById('ck_total').value = 850;
     document.getElementById('ck_mb').value = 68;
+    document.getElementById('wbc').value = 7.5;
     toggleGroup('acs');
   } else if (scenario === 'afib') {
     document.getElementById('age').value = 78;
@@ -696,7 +701,8 @@ var FIELD_RANGES = [
   { id: 'na_measured', min: 100, max: 180,  label: 'натрий' },
   { id: 'glucose',     min: 1,   max: 50,   label: 'глюкоза' },
   { id: 'potassium',   min: 1,   max: 10,   label: 'калий' },
-  { id: 'magnesium',   min: 0.1, max: 5,    label: 'магний' }
+  { id: 'magnesium',   min: 0.1, max: 5,    label: 'магний' },
+  { id: 'wbc',         min: 0.5, max: 50,   label: 'лейкоциты' }
 ];
 
 // Возвращает [{ id, label }] для полей, значение которых заполнено и вне [min, max].
@@ -745,6 +751,50 @@ function updateCalcButtonWarnings(warnings) {
   }
 }
 
+document.getElementById('clearScalesBtn').addEventListener('click', function() {
+  document.querySelectorAll('#scaleSelector input[type="checkbox"]').forEach(function(cb) {
+    cb.checked = false;
+    var name = cb.id.replace('scale_','');
+    toggleScale(name, cb);
+  });
+});
+
+// PRECISE-DAPT: официальная номограмма (Costa F, et al. Lancet 2017;389(10073):1025-34; приложение).
+// Непрерывная шкала 0–100: балл = линейная функция от значения (считывается по оси Points номограммы),
+// каждый компонент округляется до целого. Ограничения переменных (приложение, eTable 5):
+// возраст <50 → 0; КлКр >100 → 0; Hb ≥12 → 0 и ≤10 → 15 (г/дл); WBC ≤5 → 0 и ≥20 → 15.
+// Ось «Bleeding score» на номограмме обрезана на 36 (95-й процентиль) — только для графика, не для расчёта.
+function calcPreciseScore(age, crCl, hbGdl, wbc, bleed) {
+  var ptsAge  = Math.round(Math.max(0, Math.min(19, (age - 50) / 40 * 19)));
+  var ptsCr   = Math.round(Math.max(0, Math.min(25, (100 - crCl) / 100 * 25)));
+  var ptsHb   = Math.round(Math.max(0, Math.min(15, (12 - hbGdl) / 2 * 15)));
+  var ptsWbc  = Math.round(Math.max(0, Math.min(15, (wbc - 5) / 15 * 15)));
+  var ptsBleed = bleed ? 26 : 0;
+  return ptsAge + ptsCr + ptsHb + ptsWbc + ptsBleed;
+}
+
+function calculatePreciseDapt() {
+  var age = parseNum('age');
+  var sex = document.getElementById('sex').value;
+  var weight = parseNum('weight');
+  var creat = parseNum('creatinine');
+  var hbGdl = parseNum('hb');
+  if (hbGdl !== null) hbGdl = hbGdl / 10;
+  var wbc = parseNum('wbc');
+  var bleed = document.getElementById('precise_bleed').checked;
+  if (!age || !sex || !weight || creat === null || creat <= 0 || hbGdl === null || wbc === null) return null;
+  var crCl = calcCG(age, sex, weight, creat);
+  if (crCl === null) return null;
+  var score = calcPreciseScore(age, crCl, hbGdl, wbc, bleed);
+  return {
+    score: score,
+    risk: score >= 25 ? 'high' : score >= 18 ? 'moderate' : score >= 11 ? 'low' : 'verylow',
+    crCl: crCl,
+    hb: hbGdl.toFixed(1),
+    wbc: wbc,
+    bleed: bleed
+  };
+}
 function toggleScale(name, el) {
   var lbl = document.getElementById('toggle_' + name);
   var blk = document.getElementById('block_' + name);
@@ -855,7 +905,7 @@ function initSexToggle() {
 function toggleGroup(groupName) {
   var scales = [];
   if (groupName === 'acs') {
-    scales = ['grace', 'crusade', 'archbr', 'caprini'];
+    scales = ['grace', 'crusade', 'archbr', 'caprini', 'precise'];
   } else if (groupName === 'afib') {
     scales = ['hasbled', 'cha2ds2'];
   } else if (groupName === 'pe') {
@@ -882,7 +932,7 @@ function toggleGroup(groupName) {
 
 function updateGroupButtonsUI() {
   var groups = {
-    acs: ['grace', 'crusade', 'archbr', 'caprini'],
+    acs: ['grace', 'crusade', 'archbr', 'caprini', 'precise'],
     afib: ['hasbled', 'cha2ds2'],
     pe: ['pesi', 'wells', 'geneva']
   };
@@ -1245,7 +1295,7 @@ function restoreAppState() {
   syncCirrhosisAuto();
 
   // Применяем видимость блоков шкал и их подсветку по восстановленным чекбоксам
-  var scales = ['ckdepi','cg','grace','crusade','archbr','caprini','hasbled','cha2ds2','pesi','wells','geneva'];
+  var scales = ['ckdepi','cg','grace','crusade','archbr','caprini','hasbled','cha2ds2','pesi','wells','geneva','precise'];
   scales.forEach(function(name) {
     var toggleEl = document.querySelector('#toggle_' + name + ' input');
     if (toggleEl) toggleScale(name, toggleEl);
@@ -1264,7 +1314,7 @@ function resetAllData() {
   if (killip) killip.value = '1';
 
   // Переключатели шкал — все включены
-  var scales = ['ckdepi','cg','grace','crusade','archbr','caprini','hasbled','cha2ds2','pesi','wells','geneva'];
+  var scales = ['ckdepi','cg','grace','crusade','archbr','caprini','hasbled','cha2ds2','pesi','wells','geneva','precise'];
   scales.forEach(function(name) {
     var toggleEl = document.querySelector('#toggle_' + name + ' input');
     if (toggleEl) {
@@ -1297,6 +1347,9 @@ function resetAllData() {
 
   // Снимаем подсветки: красные (пустые поля) и оранжевые (вне диапазона),
   // возвращаем кнопке «Рассчитать» обычный вид.
+  // Сначала autofill() — при пустых полях он скрывает все подсказки ⚠️
+  // (Caprini «Инсульт», «ОИМ», HAS-BLED «Кровотечение», онкологические).
+  autofill();
   highlightErrorFields([]);
   applyRangeWarnings();
   updateCalcButtonWarnings([]);

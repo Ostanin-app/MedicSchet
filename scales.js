@@ -68,7 +68,7 @@ function calcBMI(weightKg, heightCm) {
 }
 
 function getWorkingCrClData(age, sex, height, weight, creatUmol) {
-  if (age === null || !sex || height === null || height <= 0 ||
+  if (age === null || !sex ||
       weight === null || weight <= 0 || creatUmol === null || creatUmol <= 0) {
     return null;
   }
@@ -621,7 +621,8 @@ function updateFieldVisibility() {
     caprini: isScaleActive('caprini'),
     pesi:    isScaleActive('pesi'),
     wells:   isScaleActive('wells'),
-    geneva:  isScaleActive('geneva')
+    geneva:  isScaleActive('geneva'),
+    precise: isScaleActive('precise')
   };
 
   function setVisible(className, condition) {
@@ -631,14 +632,19 @@ function updateFieldVisibility() {
     });
   }
 
-  var needAge    = true;
-  var needSex    = active.ckdepi || active.cg || active.crusade || active.archbr || active.cha2ds2 || active.pesi;
+  var anyScale = active.ckdepi || active.cg || active.grace || active.crusade ||
+                 active.archbr || active.hasbled || active.cha2ds2 || active.caprini ||
+                 active.pesi || active.wells || active.geneva || active.precise;
+  var needAge    = anyScale;
+  var noScaleHint = document.getElementById('noScaleHint');
+  if (noScaleHint) noScaleHint.style.display = anyScale ? 'none' : '';
+  var needSex    = active.ckdepi || active.cg || active.crusade || active.archbr || active.cha2ds2 || active.pesi || active.precise;
   var needHeight = active.cg || active.caprini || active.crusade;
-  var needWeight = active.cg || active.caprini || active.crusade;
+  var needWeight = active.cg || active.caprini || active.crusade || active.precise;
   var needSBP    = active.grace || active.crusade || active.hasbled || active.pesi;
   var needHR     = active.grace || active.crusade || active.pesi || active.wells || active.geneva;
-  var needCreat  = active.ckdepi || active.cg || active.grace || active.archbr || active.hasbled || active.crusade;
-  var needHB     = active.archbr;
+  var needCreat  = active.ckdepi || active.cg || active.grace || active.archbr || active.hasbled || active.crusade || active.precise;
+  var needHB     = active.archbr || active.precise;
   var needHCT    = active.crusade;
   var needPLT    = active.archbr;
 
@@ -646,6 +652,8 @@ function updateFieldVisibility() {
   var needHF       = active.crusade || active.cha2ds2 || active.caprini || active.pesi;
   var needHTN      = active.cha2ds2;
   var needStroke   = active.hasbled || active.cha2ds2;
+  var needEmb      = active.cha2ds2;
+  var needVte      = active.caprini || active.wells || active.geneva;
   var needVasc     = active.crusade || active.cha2ds2;
   var needVerapamil = active.cg;
 
@@ -664,10 +672,12 @@ function updateFieldVisibility() {
   setVisible('field-hf',       needHF);
   setVisible('field-htn',      needHTN);
   setVisible('field-stroke',   needStroke);
+  setVisible('field-embolism', needEmb);
+  setVisible('field-vte',      needVte);
   setVisible('field-vasc',     needVasc);
   setVisible('field-verapamil', needVerapamil);
 
-  var anyCheckboxVisible = needDM || needHF || needHTN || needStroke || needVasc || needVerapamil;
+  var anyCheckboxVisible = needDM || needHF || needHTN || needStroke || needEmb || needVte || needVasc || needVerapamil;
   var divider = document.querySelector('.divider');
   if (divider) divider.style.display = anyCheckboxVisible ? '' : 'none';
 }
@@ -1283,21 +1293,21 @@ function calculate() {
   var hb     = parseNum('hb');
   var hct    = parseNum('hct');
   var plt    = parseNum('plt');
+  var wbc    = parseNum('wbc');
 
   if (!age) errors.push({ field: 'age', msg: 'Введите возраст' });
 
-  var sexRequiredScales = ['ckdepi', 'cg', 'crusade', 'cha2ds2', 'pesi'];
+  var sexRequiredScales = ['ckdepi', 'cg', 'crusade', 'cha2ds2', 'pesi', 'precise'];
   var needSex = sexRequiredScales.some(function(scale) { return isScaleActive(scale); });
   if (needSex && (!sex || sex === '')) errors.push({ field: 'sex', msg: 'Выберите пол' });
 
   if (!creat && (isScaleActive('ckdepi') || isScaleActive('cg') || isScaleActive('grace') ||
-      isScaleActive('crusade') || isScaleActive('archbr') || isScaleActive('hasbled'))) {
+      isScaleActive('crusade') || isScaleActive('archbr') || isScaleActive('hasbled') || isScaleActive('precise'))) {
     errors.push({ field: 'creatinine', msg: 'Введите креатинин' });
   }
 
   if (isScaleActive('cg')) {
     if (!weight) errors.push({ field: 'weight', msg: 'Введите вес (для шкалы Кокрофт-Голт)' });
-    if (!height) errors.push({ field: 'height', msg: 'Введите рост (для шкалы Кокрофт-Голт)' });
   }
 
   if (isScaleActive('crusade')) {
@@ -1337,6 +1347,13 @@ function calculate() {
     if (!sbp) errors.push({ field: 'sbp', msg: 'Введите систолическое АД (для HAS-BLED)' });
   }
 
+  // PRECISE-DAPT: нужны вес (КлКр), гемоглобин (г/дл) и лейкоциты
+  if (isScaleActive('precise')) {
+    if (!weight) errors.push({ field: 'weight', msg: 'Введите вес (для расчёта КлКр в PRECISE-DAPT)' });
+    if (!hb)     errors.push({ field: 'hb',     msg: 'Введите гемоглобин (для PRECISE-DAPT)' });
+    if (!wbc)    errors.push({ field: 'wbc',    msg: 'Введите лейкоциты (для PRECISE-DAPT)' });
+  }
+
   var resultsHTML = '';
   var copyLines   = [];
   var egfr = null, cgCrcl = null;
@@ -1357,7 +1374,7 @@ function calculate() {
       ckdRisk,
       'Для выбора дозы ПОАК используйте клиренс креатинина (Кокрофт‑Голт).'
     );
-    copyLines.push('CKD-EPI: ' + egfr.toFixed(1) + ' мл/мин/1,73 м² — ' + stg.stageRu);
+    copyLines.push('CKD-EPI: ' + egfr.toFixed(1) + ' мл/мин/1,73 м²');
   }
 
   // --- Кокрофт-Голт ---
@@ -1383,6 +1400,13 @@ function calculate() {
       var methodBlockStyle   = 'margin-top:8px;padding:8px 10px;background:var(--green-soft);border-left:3px solid var(--green);border-radius:0 6px 6px 0;font-size:12px;line-height:1.5;';
       var brownLower = null;
       var brownUpper = null;
+
+      // Рост не указан — считаем по фактическому весу (TBW) с подсказкой,
+      // категория по ИМТ невозможна.
+      if (height === null || height <= 0) {
+        categoryText = 'Рост не указан — расчёт по фактическому весу (TBW)';
+        methodNote = 'Рабочий КлКр рассчитан по фактическому весу (Winter, 2012). Для оценки по идеальной массе тела (IBW) внесите рост.';
+      }
 
       if (bmi !== null && cgCrclIbw !== null) {
         if (bmi < 18.5) {
@@ -1550,8 +1574,8 @@ function calculate() {
       graceHint
     );
 
-    var rkoCategoryText = gScore <= 108 ? 'низкого' : gScore <= 140 ? 'умеренного' : 'высокого';
-    var rkoThresholds = { 'низкого': '≤108 баллов', 'умеренного': '109–140 баллов', 'высокого': '≥141 балла' };
+    var rkoCategoryText = gScore <= 108 ? 'низкий' : gScore <= 140 ? 'умеренный' : 'высокий';
+    var rkoThresholds = { 'низкий': '≤108 баллов', 'умеренный': '109–140 баллов', 'высокий': '≥141 балла' };
     copyLines.push('GRACE 1.0: ' + gScore + ' ' + pluralizeBalls(gScore) + ' — ' + rkoCategoryText +
       ' риск по РКО (' + (rkoThresholds[rkoCategoryText] || '') + '). Риск 6-месячной летальности по GRACE 2.0: ' + grace2_6m.toFixed(1) + '%.');
   }
@@ -1791,6 +1815,39 @@ function calculate() {
       ' — ' + gR3.label.toLowerCase() + '. По двухуровневой модели — ' + genevaCopyR2.toLowerCase() + '.');
   }
 
+  // --- PRECISE-DAPT ---
+  if (isScaleActive('precise') && age && sex && weight && creat && hb !== null && wbc !== null) {
+    var pd = calculatePreciseDapt();
+    if (pd !== null) {
+      var pdRiskLabel = pd.risk === 'high' ? 'Высокий риск кровотечения'
+        : pd.risk === 'moderate' ? 'Умеренный риск кровотечения'
+        : pd.risk === 'low' ? 'Низкий риск кровотечения'
+        : 'Очень низкий риск кровотечения';
+      var pdRiskClass = pd.risk === 'high' ? 'high' : pd.risk === 'moderate' ? 'moderate' : 'low';
+      var pdInfoId = 'precise_info_' + Date.now();
+      var pdHint = 'Баллы ≥25 — рассмотрите короткую ДАТТ (3–6 мес) после ЧКВ; при <25 рекомендована стандартная ДАТТ (12 мес).' +
+        '<span class="info-icon" id="' + pdInfoId + '" style="cursor:help;font-size:16px;opacity:0.6;vertical-align:middle;margin-left:6px;">ⓘ</span>';
+      resultsHTML += makeResultCard(
+        'PRECISE-DAPT',
+        pd.score + ' ' + pluralizeBalls(pd.score),
+        pdRiskLabel,
+        pdRiskClass,
+        '',
+        pdHint
+      );
+      setTimeout(function() {
+        var icon = document.getElementById(pdInfoId);
+        if (icon) setupTooltipTrigger(icon,
+          'Шкала помогает подобрать длительность двойной антиагрегантной терапии (ДАТТ) после ЧКВ. ' +
+          'Баллы ≥25 — высокий риск кровотечения: целесообразна короткая ДАТТ (3–6 мес) с переходом на монотерапию. ' +
+          'При баллах <25 стандартная ДАТТ (12 мес) обычно допустима. ' +
+          'Решение принимайте индивидуально — с учётом ишемического риска, сопутствующих заболеваний и общего состояния пациента; ' +
+          'при изменении функции почек или гемоглобина шкалу стоит пересчитать.');
+      }, 50);
+      copyLines.push('PRECISE-DAPT: ' + pd.score + ' ' + pluralizeBalls(pd.score) + ' — ' + pdRiskLabel.toLowerCase());
+    }
+  }
+
   if (errors.length > 0) {
     showToast(errors.map(function(e) { return e.msg; }).join(', '), 'error');
     highlightErrorFields(errors.map(function(e) { return e.field; }));
@@ -1803,7 +1860,7 @@ function calculate() {
   updateCalcButtonWarnings(rangeWarnings);
 
   document.getElementById('resultsGrid').innerHTML = resultsHTML;
-  document.getElementById('copyText').textContent  = copyLines.join('\n');
+  document.getElementById('copyText').textContent  = copyLines.map(function(s) { return '- ' + s; }).join('\n');
   document.getElementById('results').style.display = 'block';
   document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
 }

@@ -100,7 +100,8 @@ body {
 *::-webkit-scrollbar-thumb { background: #c6cbd9; border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
 *::-webkit-scrollbar-thumb:hover { background: #aab1c4; border: 2px solid transparent; background-clip: content-box; }
 
-.container { max-width: 980px; margin: 0 auto; padding: 22px 18px 110px; }
+.container { max-width: 980px; margin: 0 auto; padding: 22px 18px 44px; }
+.disclaimer-container { padding-bottom: 110px; }
 
 /* Раскладка как в оригинале: layout-wrapper НЕ flex.
    Основная колонка всегда полной ширины, а боковой блок анализа
@@ -1504,7 +1505,7 @@ body.dark-theme .sidebar-left::-webkit-scrollbar-thumb { background: rgba(255,25
 }
 
 @media (max-width: 600px) {
-  .container { padding: 14px 12px 110px; }
+  .container { padding: 14px 12px 44px; }
   .input-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
   .scale-cb-grid { grid-template-columns: 1fr; }
   .checkbox-grid { grid-template-columns: 1fr; }

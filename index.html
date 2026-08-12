@@ -91,6 +91,7 @@
        <button type="button" class="group-btn" data-group="acs">ОКС</button>
        <button type="button" class="group-btn" data-group="afib">ФП</button>
        <button type="button" class="group-btn" data-group="pe">ТЭЛА</button>
+       <button type="button" class="group-btn" id="clearScalesBtn" title="Очистить выбор">✕</button>
      </div>
     </div>
     <div class="card-body">
@@ -112,6 +113,9 @@
         </label>
         <label class="scale-toggle active" id="toggle_caprini">
           <input type="checkbox" id="scale_caprini" checked onchange="toggleScale('caprini',this)">Caprini
+        </label>
+        <label class="scale-toggle active" id="toggle_precise">
+          <input type="checkbox" id="scale_precise" checked onchange="toggleScale('precise',this)">PRECISE-DAPT
         </label>
         <label class="scale-toggle active" id="toggle_hasbled">
           <input type="checkbox" id="scale_hasbled" checked onchange="toggleScale('hasbled',this)">HAS-BLED
@@ -149,6 +153,9 @@
   <div class="card">
     <div class="card-header">Данные пациента <span class="badge">общие поля — вводятся один раз</span></div>
     <div class="card-body">
+      <div class="scale-cb-hint" id="noScaleHint" style="display:none;margin-bottom:12px;padding:10px 12px;background:var(--orange-soft);border-left:3px solid var(--orange);border-radius:0 6px 6px 0;font-size:13px;line-height:1.5;">
+        Выберите хотя бы одну шкалу — тогда здесь появятся поля для ввода.
+      </div>
       <div class="input-grid">
 
         <div class="input-group field-age">
@@ -466,6 +473,28 @@
           <span>Любой ишемический инсульт (любой давности, не отвечающий большому критерию)</span>
         </label>
 
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PRECISE-DAPT ===== -->
+  <div class="scale-block" id="block_precise">
+    <div class="scale-block-header">📉 PRECISE-DAPT — риск кровотечения при ДАТТ после ЧКВ</div>
+    <div class="scale-block-body">
+      <div class="scale-cb-hint" style="margin-bottom:10px;padding:8px 10px;background:var(--orange-soft);border-left:3px solid var(--orange);border-radius:0 6px 6px 0;font-size:12px;line-height:1.5;">
+        Используются общие данные: возраст, пол, вес, креатинин и гемоглобин (блок «Общие данные» выше).
+      </div>
+      <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+        <div class="input-group" style="flex:0 0 180px;">
+          <label>Лейкоциты <span class="unit">×10⁹/л</span></label>
+          <input type="text" id="wbc" placeholder="7.5">
+        </div>
+        <label class="cb-item" style="margin-bottom:0;">
+          <input type="checkbox" id="precise_bleed">
+          <div>
+            <div class="cb-label">Предыдущее спонтанное кровотечение</div>
+          </div>
+        </label>
       </div>
     </div>
   </div>
@@ -997,11 +1026,11 @@
 </div><!-- /container -->
 
 <!-- ===== ДИСКЛЕЙМЕР — БАННЕР ВНИЗУ СТРАНИЦЫ ===== -->
-<div class="container">
+<div class="container disclaimer-container">
   <div class="disclaimer-banner">
     <h3>Внимание! Важная информация</h3>
     <p>Данный калькулятор является <strong>вспомогательным инструментом</strong> и предназначен для использования <strong>только квалифицированными медицинскими специалистами</strong>.</p>
-    <p>Расчёты основаны на опубликованных клинических шкалах и номограммах (GRACE, CRUSADE, HAS-BLED, CHA₂DS₂-VASc, Caprini, PESI/sPESI, CKD-EPI, Кокрофт-Голт, ARC-HBR). Однако результаты расчётов <strong>не являются диагнозом</strong> и <strong>не заменяют клиническое суждение врача</strong>.</p>
+    <p>Расчёты основаны на опубликованных клинических шкалах и номограммах (GRACE, CRUSADE, HAS-BLED, CHA₂DS₂-VASc, PRECISE-DAPT, Caprini, PESI/sPESI, Wells, Revised Geneva, ARC-HBR, CKD-EPI, Кокрофт-Голт). Однако результаты расчётов <strong>не являются диагнозом</strong> и <strong>не заменяют клиническое суждение врача</strong>.</p>
     <p>Калькулятор <strong>не учитывает</strong> индивидуальные особенности пациента, сопутствующие заболевания, взаимодействие лекарственных средств и другие факторы, которые могут влиять на клиническое решение.</p>
     <p><strong>За клинические решения, принятые на основе данных калькулятора, ответственность несёт лечащий врач.</strong></p>
     <div class="disclaimer-version">По вопросам и предложениям пишите на почту: <a href="mailto:feedback@doc-apps.ru">feedback@doc-apps.ru</a></div>
@@ -1049,7 +1078,7 @@
   <div class="disclaimer-modal">
     <h3>Внимание! Важная информация</h3>
     <p>Данный калькулятор является <strong>вспомогательным инструментом</strong> и предназначен для использования <strong>только квалифицированными медицинскими специалистами</strong>.</p>
-    <p>Расчёты основаны на опубликованных клинических шкалах и номограммах (GRACE, CRUSADE, HAS-BLED, CHA₂DS₂-VASc, Caprini, PESI/sPESI, CKD-EPI, Кокрофт-Голт, ARC-HBR). Однако результаты расчётов <strong>не являются диагнозом</strong> и <strong>не заменяют клиническое суждение врача</strong>.</p>
+    <p>Расчёты основаны на опубликованных клинических шкалах и номограммах (GRACE, CRUSADE, HAS-BLED, CHA₂DS₂-VASc, PRECISE-DAPT, Caprini, PESI/sPESI, Wells, Revised Geneva, ARC-HBR, CKD-EPI, Кокрофт-Голт). Однако результаты расчётов <strong>не являются диагнозом</strong> и <strong>не заменяют клиническое суждение врача</strong>.</p>
     <p>Калькулятор <strong>не учитывает</strong> индивидуальные особенности пациента, сопутствующие заболевания, взаимодействие лекарственных средств и другие факторы, которые могут влиять на клиническое решение.</p>
     <p><strong>За клинические решения, принятые на основе данных калькулятора, ответственность несёт лечащий врач.</strong></p>
     <button class="disclaimer-accept-btn" onclick="acceptDisclaimer()">Я понимаю и принимаю</button>
