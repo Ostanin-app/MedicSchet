@@ -19,7 +19,7 @@ function saveUndoState() {
   var inputIds = [
     'age','height','weight','sbp','hr','creatinine','hb','hct','plt','wbc',
     'pesi_rr','pesi_temp','pesi_spo2','emrPaste','ck_total','ck_mb',
-    'na_measured','glucose','potassium','magnesium'
+    'na_measured','glucose','potassium','magnesium','smoking','tchol','hdl','tg','ldl','hba1c','dm_age'
   ];
   inputIds.forEach(function(id) {
     var el = document.getElementById(id);
@@ -29,7 +29,7 @@ function saveUndoState() {
   var sexInput = document.getElementById('sex');
   if (sexInput) state['sex'] = sexInput.value;
 
-  var commonCbIds = ['cb_dm','cb_hf','cb_htn','cb_stroke','cb_tia','cb_embolism','cb_vte','cb_vasc','cb_verapamil'];
+  var commonCbIds = ['cb_dm','cb_hf','cb_htn','cb_stroke','cb_tia','cb_embolism','cb_vte','cb_vasc','cb_verapamil','cb_mi','cb_sghs','cb_dm_tod','cb_fh_cvd','cb_fh_lip','cb_asb50','cb_ath25','cb_gosghs'];
   commonCbIds.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) state[id] = el.checked;
@@ -64,7 +64,8 @@ function saveUndoState() {
     'geneva_age','geneva_prev_dvt','geneva_surgery','geneva_cancer',
     'geneva_leg_pain','geneva_hemoptysis','geneva_hr75','geneva_hr95',
     'geneva_dvt_signs',
-    'precise_bleed'
+    'precise_bleed',
+    'score2_2events','dm_age20'
   ];
 
   allScaleCbIds.forEach(function(id) {
@@ -112,7 +113,7 @@ function performUndo() {
   var inputIds = [
     'age','height','weight','sbp','hr','creatinine','hb','hct','plt','wbc',
     'pesi_rr','pesi_temp','pesi_spo2','emrPaste','ck_total','ck_mb',
-    'na_measured','glucose','potassium','magnesium'
+    'na_measured','glucose','potassium','magnesium','smoking','tchol','hdl','tg','ldl','hba1c','dm_age'
   ];
   inputIds.forEach(function(id) {
     var el = document.getElementById(id);
@@ -126,8 +127,9 @@ function performUndo() {
     sexInput.value = prevState['sex'];
   }
   syncSexFromHidden();
+  syncSmokingFromHidden();
 
-  var commonCbIds = ['cb_dm','cb_hf','cb_htn','cb_stroke','cb_tia','cb_embolism','cb_vte','cb_vasc','cb_verapamil'];
+  var commonCbIds = ['cb_dm','cb_hf','cb_htn','cb_stroke','cb_tia','cb_embolism','cb_vte','cb_vasc','cb_verapamil','cb_mi','cb_sghs','cb_dm_tod','cb_fh_cvd','cb_fh_lip','cb_asb50','cb_ath25','cb_gosghs'];
   commonCbIds.forEach(function(id) {
     var el = document.getElementById(id);
     if (el && prevState.hasOwnProperty(id)) {
@@ -164,7 +166,8 @@ function performUndo() {
     'geneva_age','geneva_prev_dvt','geneva_surgery','geneva_cancer',
     'geneva_leg_pain','geneva_hemoptysis','geneva_hr75','geneva_hr95',
     'geneva_dvt_signs',
-    'precise_bleed'
+    'precise_bleed',
+    'score2_2events','dm_age20'
   ];
 
   allScaleCbIds.forEach(function(id) {
@@ -249,7 +252,7 @@ function initUndoTracking() {
   var inputFields = [
     'age','height','weight','sbp','hr','creatinine','hb','hct','plt','wbc',
     'pesi_rr','pesi_temp','pesi_spo2','emrPaste','ck_total','ck_mb',
-    'na_measured','glucose','potassium','magnesium'
+    'na_measured','glucose','potassium','magnesium','smoking','tchol','hdl','tg','ldl','hba1c','dm_age'
   ];
   inputFields.forEach(function(id) {
     var el = document.getElementById(id);
@@ -261,7 +264,7 @@ function initUndoTracking() {
   });
 
   var allTrackedIds = [
-    'cb_dm','cb_hf','cb_htn','cb_stroke','cb_tia','cb_embolism','cb_vte','cb_vasc','cb_verapamil',
+    'cb_dm','cb_hf','cb_htn','cb_stroke','cb_tia','cb_embolism','cb_vte','cb_vasc','cb_verapamil','cb_mi','cb_sghs','cb_dm_tod','cb_fh_cvd','cb_fh_lip','cb_asb50','cb_ath25','cb_gosghs','smoking',
     'grace_killip',
     'grace_arrest','grace_st','grace_enzymes',
     'crusade_female','crusade_hf','crusade_vasc','crusade_dm',
@@ -290,7 +293,8 @@ function initUndoTracking() {
     'geneva_age','geneva_prev_dvt','geneva_surgery','geneva_cancer',
     'geneva_leg_pain','geneva_hemoptysis','geneva_hr75','geneva_hr95',
     'geneva_dvt_signs',
-    'precise_bleed'
+    'precise_bleed',
+    'score2_2events','dm_age20'
   ];
 
   allTrackedIds.forEach(function(id) {
@@ -343,11 +347,190 @@ function toggleDarkMode() {
 }
 
 // ===================================================
+//  РЕЖИМ РАБОТЫ: СТАЦИОНАР / ПОЛИКЛИНИКА
+// ===================================================
+//  Одна страница работает в двух режимах. Общие данные
+//  пациента (возраст, пол, АД, ЧСС, анализы) физически
+//  одни и те же — при переключении режима они сохраняются,
+//  ничего переносить не нужно.
+//  Принадлежность шкалы режиму задаётся таблицей:
+//  'emergency' — только стационар, 'both' — оба режима,
+//  'outpatient' — только поликлиника (появится позже).
+var SCALE_MODES = {
+  ckdepi:  'both',
+  cg:      'both',
+  grace:   'emergency',
+  crusade: 'emergency',
+  archbr:  'emergency',
+  caprini: 'emergency',
+  precise: 'emergency',
+  hasbled: 'both',
+  cha2ds2: 'both',
+  pesi:    'emergency',
+  wells:   'emergency',
+  geneva:  'emergency',
+  score2:  'outpatient'
+};
+
+var MODE_STORAGE_KEY = 'medicschet_mode';
+var MODE_SCALES_STORAGE_KEY = 'medicschet_mode_scales_v1';
+
+// Стандартный набор включённых шкал для каждого режима
+// (используется, пока пользователь не изменил выбор)
+var MODE_SCALES_DEFAULTS = {
+  emergency: ['ckdepi','cg','grace','crusade','archbr','caprini','hasbled','cha2ds2','pesi','wells','geneva','precise'],
+  outpatient: ['ckdepi','cg','hasbled','cha2ds2','score2']
+};
+
+// Память выбранных шкал режима: каждый режим хранит свой список
+// включённых шкал отдельно (localStorage), поэтому при переключении
+// туда-обратно выбор шкал восстанавливается, а не теряется.
+function getModeScales(mode) {
+  var stored = null;
+  try { stored = JSON.parse(localStorage.getItem(MODE_SCALES_STORAGE_KEY) || 'null'); } catch (e) {}
+  if (stored && stored.hasOwnProperty(mode) && Array.isArray(stored[mode])) {
+    return stored[mode].slice();
+  }
+  return (MODE_SCALES_DEFAULTS[mode] || []).slice();
+}
+
+function saveModeScales(mode, scaleNames) {
+  var stored = {};
+  try { stored = JSON.parse(localStorage.getItem(MODE_SCALES_STORAGE_KEY) || 'null') || {}; } catch (e) { stored = {}; }
+  stored[mode] = scaleNames.slice();
+  try { localStorage.setItem(MODE_SCALES_STORAGE_KEY, JSON.stringify(stored)); } catch (e) {}
+}
+
+// Сохраняет текущее состояние галочек как память текущего режима
+function saveCurrentModeScales() {
+  var mode = getCurrentMode();
+  var scales = ['ckdepi','cg','grace','crusade','archbr','caprini','hasbled','cha2ds2','pesi','wells','geneva','precise','score2'];
+  var enabled = [];
+  scales.forEach(function(name) {
+    var toggleEl = document.querySelector('#toggle_' + name + ' input');
+    if (toggleEl && toggleEl.checked) enabled.push(name);
+  });
+  saveModeScales(mode, enabled);
+}
+
+function getCurrentMode() {
+  var mode = 'emergency';
+  try {
+    var saved = localStorage.getItem(MODE_STORAGE_KEY);
+    if (saved === 'emergency' || saved === 'outpatient') mode = saved;
+  } catch (e) {}
+  return mode;
+}
+
+function saveMode(mode) {
+  try { localStorage.setItem(MODE_STORAGE_KEY, mode); } catch (e) {}
+}
+
+// Применяет текущий режим ко всей странице:
+// 1. подсвечивает нужную кнопку переключателя;
+// 2. показывает в селекторе только шкалы текущего режима;
+// 3. включает шкалы из памяти режима, остальные — выключает и скрывает
+//    (выключение обязательно: иначе «Рассчитать» посчитает чужой режим);
+// 4. показывает/скрывает подсказку поликлинического режима;
+// 5. скрывает кнопки групп ОКС/ФП/ТЭЛА в поликлинике;
+// 6. пересчитывает видимость полей и панель анализа.
+function applyMode() {
+  var mode = getCurrentMode();
+  var remembered = getModeScales(mode);
+
+  // 1. Кнопки переключателя
+  var btns = document.querySelectorAll('.mode-btn');
+  btns.forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+
+  // 2–3. Селектор шкал и блоки шкал: применяем память текущего режима
+  var scales = ['ckdepi','cg','grace','crusade','archbr','caprini','hasbled','cha2ds2','pesi','wells','geneva','precise','score2'];
+  scales.forEach(function(name) {
+    var scaleMode = SCALE_MODES[name] || 'emergency';
+    var visibleInMode = (scaleMode === 'both' || scaleMode === mode);
+    var toggleEl = document.querySelector('#toggle_' + name + ' input');
+    var toggleLabel = document.getElementById('toggle_' + name);
+    var block = document.getElementById('block_' + name);
+
+    if (visibleInMode) {
+      var enabled = remembered.indexOf(name) !== -1;
+      if (toggleEl) toggleEl.checked = enabled;
+      if (toggleLabel) {
+        toggleLabel.classList.toggle('active', enabled);
+        toggleLabel.style.display = '';
+      }
+      if (block) block.classList.toggle('hidden', !enabled);
+    } else {
+      // Шкала чужого режима: всегда выключена и скрыта
+      if (toggleEl) toggleEl.checked = false;
+      if (toggleLabel) {
+        toggleLabel.classList.remove('active');
+        toggleLabel.style.display = 'none';
+      }
+      if (block) block.classList.add('hidden');
+    }
+  });
+
+  // 5. Кнопки групп ОКС/ФП/ТЭЛА — только в стационаре
+  // Кнопки групп: в стационаре — ОКС/ФП/ТЭЛА, в поликлинике — «Липиды»
+  var groupBtns = document.getElementById('scaleGroupBtns');
+  if (groupBtns) groupBtns.style.display = '';
+  document.querySelectorAll('.group-emergency').forEach(function(b) {
+    b.style.display = (mode === 'emergency') ? '' : 'none';
+  });
+  document.querySelectorAll('.group-outpatient').forEach(function(b) {
+    b.style.display = (mode === 'outpatient') ? '' : 'none';
+  });
+
+  // 6. Видимость полей и панель анализа
+  updateFieldVisibility();
+  updateGroupButtonsUI();
+  updateAnalysisPanel();
+}
+
+// Очистка результатов и текста для истории болезни при смене режима.
+// Результаты жёстко привязаны к текущему режиму: в выписку или справку
+// не должен попасть расчёт, сделанный в другом режиме.
+function clearResultsForModeChange(mode) {
+  var results = document.getElementById('results');
+  if (results) results.style.display = 'none';
+  var grid = document.getElementById('resultsGrid');
+  if (grid) grid.innerHTML = '';
+  var copyText = document.getElementById('copyText');
+  if (copyText) copyText.textContent = '';
+
+  var modeLabel = (mode === 'outpatient') ? '«Поликлиника»' : '«Стационар»';
+  showToast('Результаты и текст для истории болезни очищены. Нажмите «⚡ Рассчитать шкалы», чтобы получить результаты для режима ' + modeLabel + '.', 'warning');
+}
+
+function initModeSwitch() {
+  var btns = document.querySelectorAll('.mode-btn');
+  btns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var mode = this.dataset.mode;
+      if (!mode) return;
+      var prevMode = getCurrentMode();
+      // Повторный клик на уже активный режим — ничего не делаем
+      if (mode === prevMode) return;
+      // Сначала сохраняем выбор шкал текущего режима в его память,
+      // затем переключаем режим и применяем память нового режима.
+      saveCurrentModeScales();
+      saveMode(mode);
+      applyMode();
+      // Результаты очищаем при каждой реальной смене режима
+      clearResultsForModeChange(mode);
+    });
+  });
+  applyMode();
+}
+
+// ===================================================
 //  ДЕМОНСТРАЦИОННЫЕ СЦЕНАРИИ
 // ===================================================
 function resetAllFields() {
   var inputIds = ['age','height','weight','sbp','hr','creatinine','hb','hct','plt','wbc',
-    'pesi_rr','pesi_temp','pesi_spo2','ck_total','ck_mb','na_measured','glucose','potassium','magnesium'];
+    'pesi_rr','pesi_temp','pesi_spo2','ck_total','ck_mb','na_measured','glucose','potassium','magnesium','smoking','tchol','hdl','tg','ldl','hba1c','dm_age'];
   inputIds.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.value = '';
@@ -356,7 +539,11 @@ function resetAllFields() {
   document.getElementById('sex').value = '';
   syncSexFromHidden();
 
-  var commonCbs = ['cb_dm','cb_hf','cb_htn','cb_stroke','cb_tia','cb_embolism','cb_vte','cb_vasc','cb_verapamil'];
+  var smokeEl = document.getElementById('smoking');
+  if (smokeEl) smokeEl.value = 'no';
+  syncSmokingFromHidden();
+
+  var commonCbs = ['cb_dm','cb_hf','cb_htn','cb_stroke','cb_tia','cb_embolism','cb_vte','cb_vasc','cb_verapamil','cb_mi','cb_sghs','cb_dm_tod','cb_fh_cvd','cb_fh_lip','cb_asb50','cb_ath25','cb_gosghs'];
   commonCbs.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.checked = false;
@@ -383,7 +570,8 @@ function resetAllFields() {
     'geneva_age','geneva_prev_dvt','geneva_surgery','geneva_cancer',
     'geneva_leg_pain','geneva_hemoptysis','geneva_hr75','geneva_hr95',
     'geneva_dvt_signs',
-    'precise_bleed'
+    'precise_bleed',
+    'score2_2events','dm_age20'
   ];
   scaleCbs.forEach(function(id) {
     var el = document.getElementById(id);
@@ -412,7 +600,16 @@ function fillDemo(scenario) {
   resetAllFields();
   undoStack = [];
 
-  var allScales = ['ckdepi','cg','grace','crusade','archbr','caprini','hasbled','cha2ds2','pesi','wells','geneva','precise'];
+  // Демо-сценарии «Липиды» относятся к поликлиническому режиму,
+  // остальные (ОКС/ФП/ТЭЛА) — к стационарному.
+  if (scenario.indexOf('lipids') === 0) {
+    saveMode('outpatient');
+  } else if (getCurrentMode() !== 'emergency') {
+    saveMode('emergency');
+  }
+  applyMode();
+
+  var allScales = ['ckdepi','cg','grace','crusade','archbr','caprini','hasbled','cha2ds2','pesi','wells','geneva','precise','score2'];
   allScales.forEach(function(scale) {
     var toggleEl = document.querySelector('#toggle_' + scale + ' input');
     if (toggleEl) {
@@ -476,6 +673,82 @@ function fillDemo(scenario) {
     document.getElementById('wells_prev_dvt').checked = true;
     document.getElementById('geneva_leg_pain').checked = true;
     toggleGroup('pe');
+  } else if (scenario === 'lipids') {
+    document.getElementById('age').value = 55;
+    document.getElementById('sex').value = 'm';
+    document.getElementById('height').value = 175;
+    document.getElementById('weight').value = 80;
+    document.getElementById('sbp').value = 130;
+    document.getElementById('creatinine').value = 90;
+    document.getElementById('tchol').value = 5.5;
+    document.getElementById('hdl').value = 1.3;
+    document.getElementById('tg').value = 1.5;
+    var smokingEl = document.getElementById('smoking');
+    if (smokingEl) smokingEl.value = 'no';
+    toggleGroup('lipids');
+  } else if (scenario === 'lipids_dm') {
+    // СД 2 типа 8 лет → SCORE2-Diabetes; ФР: возраст (м>40) + ожирение (ИМТ ~28) → высокий риск
+    document.getElementById('age').value = 60;
+    document.getElementById('sex').value = 'm';
+    document.getElementById('height').value = 172;
+    document.getElementById('weight').value = 84;
+    document.getElementById('sbp').value = 135;
+    document.getElementById('creatinine').value = 88;
+    document.getElementById('tchol').value = 5.8;
+    document.getElementById('hdl').value = 1.2;
+    document.getElementById('tg').value = 1.8;
+    document.getElementById('hba1c').value = 7.5;
+    document.getElementById('dm_age').value = 52;
+    document.getElementById('cb_dm').checked = true;
+    var smokingDm = document.getElementById('smoking');
+    if (smokingDm) smokingDm.value = 'no';
+    toggleGroup('lipids');
+  } else if (scenario === 'lipids_mi') {
+    // После инфаркта → очень высокий риск, SCORE2 не применяется
+    document.getElementById('age').value = 58;
+    document.getElementById('sex').value = 'm';
+    document.getElementById('height').value = 178;
+    document.getElementById('weight').value = 82;
+    document.getElementById('sbp').value = 125;
+    document.getElementById('creatinine').value = 92;
+    document.getElementById('tchol').value = 4.8;
+    document.getElementById('hdl').value = 1.1;
+    document.getElementById('tg').value = 1.6;
+    document.getElementById('cb_mi').checked = true;
+    var smokingMi = document.getElementById('smoking');
+    if (smokingMi) smokingMi.value = 'no';
+    toggleGroup('lipids');
+  } else if (scenario === 'lipids_op') {
+    // Пожилая 75 лет → SCORE2-OP
+    document.getElementById('age').value = 75;
+    document.getElementById('sex').value = 'f';
+    document.getElementById('height').value = 162;
+    document.getElementById('weight').value = 68;
+    document.getElementById('sbp').value = 145;
+    document.getElementById('creatinine').value = 100;
+    document.getElementById('tchol').value = 6.2;
+    document.getElementById('hdl').value = 1.4;
+    document.getElementById('tg').value = 1.3;
+    var smokingOp = document.getElementById('smoking');
+    if (smokingOp) smokingOp.value = 'no';
+    toggleGroup('lipids');
+  } else if (scenario === 'lipids_young') {
+    // Молодая диабетик 42 года, СД 5 лет без ФР → SCORE2-Diabetes, умеренный риск
+    document.getElementById('age').value = 42;
+    document.getElementById('sex').value = 'f';
+    document.getElementById('height').value = 165;
+    document.getElementById('weight').value = 60;
+    document.getElementById('sbp').value = 120;
+    document.getElementById('creatinine').value = 80;
+    document.getElementById('tchol').value = 5.2;
+    document.getElementById('hdl').value = 1.5;
+    document.getElementById('tg').value = 1.0;
+    document.getElementById('hba1c').value = 6.8;
+    document.getElementById('dm_age').value = 37;
+    document.getElementById('cb_dm').checked = true;
+    var smokingYoung = document.getElementById('smoking');
+    if (smokingYoung) smokingYoung.value = 'no';
+    toggleGroup('lipids');
   }
 
   ['ckdepi', 'cg'].forEach(function(scale) {
@@ -498,6 +771,7 @@ function fillDemo(scenario) {
   autofill();
   updateAnalysisPanel();
   syncCustomSelects();
+  applyMode();
   saveAppState();
 
   skipUndo = false;
@@ -702,7 +976,13 @@ var FIELD_RANGES = [
   { id: 'glucose',     min: 1,   max: 50,   label: 'глюкоза' },
   { id: 'potassium',   min: 1,   max: 10,   label: 'калий' },
   { id: 'magnesium',   min: 0.1, max: 5,    label: 'магний' },
-  { id: 'wbc',         min: 0.5, max: 50,   label: 'лейкоциты' }
+  { id: 'wbc',         min: 0.5, max: 50,   label: 'лейкоциты' },
+  { id: 'tchol',       min: 1,   max: 20,   label: 'общий холестерин' },
+  { id: 'hdl',         min: 0.2, max: 5,    label: 'ЛПВП' },
+  { id: 'tg',          min: 0.2, max: 20,   label: 'триглицериды' },
+  { id: 'ldl',         min: 0.3, max: 15,   label: 'ЛПНП (лаборатория)' },
+  { id: 'hba1c',       min: 3,   max: 20,   label: 'HbA1c, %' },
+  { id: 'dm_age',      min: 5,   max: 90,   label: 'возраст дебюта СД' }
 ];
 
 // Возвращает [{ id, label }] для полей, значение которых заполнено и вне [min, max].
@@ -807,6 +1087,8 @@ function toggleScale(name, el) {
   }
   updateFieldVisibility();
   updateGroupButtonsUI();
+  // Любое изменение выбора шкал сохраняем в память текущего режима
+  saveCurrentModeScales();
 }
 
 function isScaleActive(name) {
@@ -857,7 +1139,7 @@ function syncSexFromHidden() {
   var sexInput = document.getElementById('sex');
   if (!sexInput) return;
   var currentVal = sexInput.value;
-  var btns = document.querySelectorAll('.sex-btn');
+  var btns = document.querySelectorAll('.sex-btn[data-sex]');
   btns.forEach(function(btn) {
     if (btn.dataset.sex === currentVal) {
       btn.classList.add('active');
@@ -868,7 +1150,7 @@ function syncSexFromHidden() {
 }
 
 function initSexToggle() {
-  var btns = document.querySelectorAll('.sex-btn');
+  var btns = document.querySelectorAll('.sex-btn[data-sex]');
   var sexInput = document.getElementById('sex');
 
   function setActive(value) {
@@ -893,10 +1175,54 @@ function initSexToggle() {
       }
       autofill();
       if (typeof updateAnalysisPanel === 'function') updateAnalysisPanel();
+      if (typeof scheduleStateSave === 'function') scheduleStateSave();
     });
   });
 
   setActive('');
+}
+
+// ===================================================
+//  Курение: кнопки «Не курит / Бросил / Курит» (как М/Ж)
+// ===================================================
+function syncSmokingFromHidden() {
+  var smokeInput = document.getElementById('smoking');
+  if (!smokeInput) return;
+  var currentVal = smokeInput.value;
+  document.querySelectorAll('.sex-btn[data-smoke]').forEach(function(btn) {
+    if (btn.dataset.smoke === currentVal) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+}
+
+function initSmokingToggle() {
+  var btns = document.querySelectorAll('.sex-btn[data-smoke]');
+  var smokeInput = document.getElementById('smoking');
+
+  function setActive(value) {
+    btns.forEach(function(btn) {
+      if (btn.dataset.smoke === value) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+    if (smokeInput) smokeInput.value = value;
+  }
+
+  btns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var clickedVal = btn.dataset.smoke;
+      var currentVal = smokeInput ? smokeInput.value : '';
+      setActive(currentVal === clickedVal ? '' : clickedVal);
+      if (typeof scheduleStateSave === 'function') scheduleStateSave();
+    });
+  });
+
+  setActive(smokeInput ? smokeInput.value : 'no');
 }
 
 // ===================================================
@@ -910,6 +1236,8 @@ function toggleGroup(groupName) {
     scales = ['hasbled', 'cha2ds2'];
   } else if (groupName === 'pe') {
     scales = ['pesi', 'wells', 'geneva'];
+  } else if (groupName === 'lipids') {
+    scales = ['score2'];
   } else {
     return;
   }
@@ -934,7 +1262,8 @@ function updateGroupButtonsUI() {
   var groups = {
     acs: ['grace', 'crusade', 'archbr', 'caprini', 'precise'],
     afib: ['hasbled', 'cha2ds2'],
-    pe: ['pesi', 'wells', 'geneva']
+    pe: ['pesi', 'wells', 'geneva'],
+    lipids: ['score2']
   };
 
   for (var groupName in groups) {
@@ -1190,7 +1519,7 @@ var stateSaveTimer = null;
 function collectAppState() {
   var fields = {};
   var els = document.querySelectorAll(
-    'input[type="text"], input[type="number"], input[type="checkbox"], ' +
+    'input[type="text"], input[type="number"], input[type="hidden"], input[type="checkbox"], ' +
     'input[type="radio"]:checked, select, textarea'
   );
   for (var i = 0; i < els.length; i++) {
@@ -1274,6 +1603,11 @@ function restoreAppState() {
   // а также PESI ↔ Caprini: старые сохранения могли быть рассинхронизированы.
   syncLinkedCheckboxes();
 
+  // Кнопка пола М/Ж — подсветка по восстановленному значению
+  syncSexFromHidden();
+  // Кнопки курения — подсветка по восстановленному значению
+  syncSmokingFromHidden();
+
   // Онкология: применяем авто-связи узких шкал → PESI/Caprini, чтобы
   // при загрузке страницы состояние онкологии было сразу согласовано.
   applyCancerAuto();
@@ -1295,7 +1629,7 @@ function restoreAppState() {
   syncCirrhosisAuto();
 
   // Применяем видимость блоков шкал и их подсветку по восстановленным чекбоксам
-  var scales = ['ckdepi','cg','grace','crusade','archbr','caprini','hasbled','cha2ds2','pesi','wells','geneva','precise'];
+  var scales = ['ckdepi','cg','grace','crusade','archbr','caprini','hasbled','cha2ds2','pesi','wells','geneva','precise','score2'];
   scales.forEach(function(name) {
     var toggleEl = document.querySelector('#toggle_' + name + ' input');
     if (toggleEl) toggleScale(name, toggleEl);
@@ -1306,6 +1640,8 @@ function restoreAppState() {
 // возвращает все шкалы «включены», прячет результаты и чистит историю отмен.
 function resetAllData() {
   try { localStorage.removeItem(APP_STATE_KEY); } catch (e) {}
+  // Сбрасываем и память выбранных шкал обоих режимов
+  try { localStorage.removeItem(MODE_SCALES_STORAGE_KEY); } catch (e) {}
 
   resetAllFields();
 
@@ -1313,20 +1649,11 @@ function resetAllData() {
   var killip = document.getElementById('grace_killip');
   if (killip) killip.value = '1';
 
-  // Переключатели шкал — все включены
-  var scales = ['ckdepi','cg','grace','crusade','archbr','caprini','hasbled','cha2ds2','pesi','wells','geneva','precise'];
-  scales.forEach(function(name) {
-    var toggleEl = document.querySelector('#toggle_' + name + ' input');
-    if (toggleEl) {
-      toggleEl.checked = true;
-      toggleScale(name, toggleEl);
-    }
-  });
+  // Переключатели шкал — по умолчанию для текущего режима
+  // (память шкал очищена, поэтому applyMode() применит стандартный набор)
+  applyMode();
 
   syncCustomSelects();
-  updateFieldVisibility();
-  updateGroupButtonsUI();
-  updateAnalysisPanel();
 
   // Онкология: после сброса все источники выключены — снимаем остаточные
   // авто-метки/data-флаги приёмников и прячем подсказки ⚠️.

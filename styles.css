@@ -136,6 +136,46 @@ header::after {
 }
 header > span, header > div { position: relative; z-index: 1; }
 
+/* Переключатель режима: Стационар / Поликлиника */
+.mode-switch {
+  display: inline-flex;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+}
+.mode-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,.85);
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: var(--font);
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background .18s, color .18s;
+  white-space: nowrap;
+}
+.mode-btn:hover { background: rgba(255,255,255,.12); color: #fff; }
+.mode-btn.active {
+  background: #fff;
+  color: var(--primary-2);
+  box-shadow: 0 2px 8px rgba(0,0,0,.18);
+}
+body.dark-theme .mode-switch {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.12);
+}
+body.dark-theme .mode-btn { color: #b9bdc7; }
+body.dark-theme .mode-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
+body.dark-theme .mode-btn.active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 10px -2px rgba(138,138,247,.5);
+}
+
 /* Кнопки в шапке (тема, инструкция, демо) */
 #themeToggle, #helpOpenBtn, #demoToggle {
   background: rgba(255,255,255,.12) !important;
@@ -513,6 +553,13 @@ select option {
 .sex-btn:hover { background: var(--primary-soft); }
 .sex-btn.active { background: var(--primary); color: #fff; }
 
+/* Кнопки курения (3 состояния) — в одну строку, компактнее */
+.sex-btn[data-smoke] {
+  white-space: nowrap;
+  padding: 9px 6px;
+  font-size: 13px;
+}
+
 /* Плавающая кнопка "Рассчитать" */
 .floating-calc {
   position: fixed;
@@ -706,6 +753,24 @@ select option {
 
 .card-span-2 { grid-column: span 2; }
 
+/* Объединённый блок «Цель терапии и варианты»: широкая карточка в 2 колонки */
+.therapy-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 20px;
+}
+.therapy-col-title {
+  font-weight: 800;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+@media (max-width: 560px) {
+  .therapy-grid { grid-template-columns: 1fr; }
+}
+
 /* Сводка ARC-HBR */
 .arc-summary { display: flex; gap: 14px; font-size: 13px; margin-bottom: 8px; align-items: center; }
 .arc-summary .arc-num {
@@ -809,6 +874,25 @@ select option {
 /* ------------------------------------------------------------
    13. ТОСТ-УВЕДОМЛЕНИЯ
    ------------------------------------------------------------ */
+/* Контейнер тостов: появляется ниже шапки сайта и ниже плавающей
+   кнопки «Сброс» (на широких экранах), чтобы ничего не перекрывать.
+   На мобильных шапка выше (переносится на две строки) — там отступ
+   больше. */
+#toastContainer {
+  top: 78px;
+  right: 20px;
+}
+@media (max-width: 600px) {
+  #toastContainer {
+    top: 112px;
+    right: 12px;
+    left: 12px;
+  }
+}
+@media (min-width: 1280px) {
+  #toastContainer { top: 156px; }
+}
+
 .toast {
   background: var(--surface);
   border: 1px solid var(--border);

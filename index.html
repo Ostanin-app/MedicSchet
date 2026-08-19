@@ -16,7 +16,11 @@
 
 <header style="display: flex; justify-content: space-between; align-items: center;">
   <span>❤️ МедикСчёт — калькулятор кардиолога</span>
-  <div style="display: flex; align-items: center; gap: 8px;">
+  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+    <div class="mode-switch" id="modeSwitch" title="Режим работы">
+      <button type="button" class="mode-btn active" data-mode="emergency">🚑 Стационар</button>
+      <button type="button" class="mode-btn" data-mode="outpatient">🏥 Поликлиника</button>
+    </div>
     <button id="themeToggle" title="Переключить тему">🌓</button>
     <button id="helpOpenBtn" title="Инструкция">❓ Инструкция</button>
     <button id="resetBtn" title="Сбросить все данные">🗑️ Сброс</button>
@@ -26,6 +30,11 @@
         <div class="demo-item" data-demo="acs">ОКС</div>
         <div class="demo-item" data-demo="afib">ФП</div>
         <div class="demo-item" data-demo="pe">ТЭЛА</div>
+        <div class="demo-item" data-demo="lipids">Липиды: базовый SCORE2</div>
+        <div class="demo-item" data-demo="lipids_dm">Липиды: СД 2 типа</div>
+        <div class="demo-item" data-demo="lipids_mi">Липиды: после инфаркта</div>
+        <div class="demo-item" data-demo="lipids_op">Липиды: 75 лет</div>
+        <div class="demo-item" data-demo="lipids_young">Липиды: молодой диабетик</div>
       </div>
     </div>
   </div>
@@ -86,11 +95,12 @@
   <!-- ===== ВЫБОР ШКАЛ ===== -->
   <div class="card">
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-     <span>Активные шкалы и калькуляторы</span>
-     <div style="display: flex; gap: 8px;">
-       <button type="button" class="group-btn" data-group="acs">ОКС</button>
-       <button type="button" class="group-btn" data-group="afib">ФП</button>
-       <button type="button" class="group-btn" data-group="pe">ТЭЛА</button>
+     <span>Активные шкалы и калькуляторы <span class="info-icon" id="outpatientHintIcon" style="cursor:help;font-size:16px;opacity:0.6;vertical-align:middle;">ⓘ</span></span>
+     <div style="display: flex; gap: 8px;" id="scaleGroupBtns">
+       <button type="button" class="group-btn group-emergency" data-group="acs">ОКС</button>
+       <button type="button" class="group-btn group-emergency" data-group="afib">ФП</button>
+       <button type="button" class="group-btn group-emergency" data-group="pe">ТЭЛА</button>
+       <button type="button" class="group-btn group-outpatient" data-group="lipids">💊 Липиды</button>
        <button type="button" class="group-btn" id="clearScalesBtn" title="Очистить выбор">✕</button>
      </div>
     </div>
@@ -131,6 +141,9 @@
         </label>
         <label class="scale-toggle active" id="toggle_geneva">
           <input type="checkbox" id="scale_geneva" checked onchange="toggleScale('geneva',this)">Geneva (ТЭЛА)
+        </label>
+        <label class="scale-toggle" id="toggle_score2">
+          <input type="checkbox" id="scale_score2" onchange="toggleScale('score2',this)">СС-риск и липиды (SCORE2)
         </label>
       </div>
     </div>
@@ -287,6 +300,70 @@
           <div>
             <div class="cb-label">Приём верапамила</div>
             <div class="cb-hint">Влияет на дозировку дабигатрана (критерий снижения дозы)</div>
+          </div>
+        </label>
+
+        <label class="cb-item field-mi">
+          <input type="checkbox" id="cb_mi">
+          <div>
+            <div class="cb-label">Инфаркт миокарда в анамнезе</div>
+            <div class="cb-hint">Перенесённый ИМ, включая ОКС с подъёмом и без подъёма ST</div>
+          </div>
+        </label>
+
+        <label class="cb-item field-sghs">
+          <input type="checkbox" id="cb_sghs">
+          <div>
+            <div class="cb-label">СГХС (семейная гиперхолестеринемия)</div>
+            <div class="cb-hint">Вероятная/определённая СГХС по клиническим критериям</div>
+          </div>
+        </label>
+
+        <label class="cb-item field-dm-tod">
+          <input type="checkbox" id="cb_dm_tod">
+          <div>
+            <div class="cb-label">Поражение органов-мишеней при СД</div>
+            <div class="cb-hint">Микроальбуминурия/протеинурия, ретинопатия, нейропатия и др.</div>
+          </div>
+        </label>
+
+        <label class="cb-item field-fh-cvd">
+          <input type="checkbox" id="cb_fh_cvd">
+          <div>
+            <div class="cb-label">Семейный анамнез ССЗ</div>
+            <div class="cb-hint">Ранние ССЗ у родственников первой линии: мужчины &lt; 55 лет, женщины &lt; 60 лет</div>
+          </div>
+        </label>
+
+        <label class="cb-item field-fh-lip">
+          <input type="checkbox" id="cb_fh_lip">
+          <div>
+            <div class="cb-label">Семейная гиперлипидемия</div>
+            <div class="cb-hint">IIa, IIb или III тип по данным семейного анамнеза</div>
+          </div>
+        </label>
+
+        <label class="cb-item field-asb50">
+          <input type="checkbox" id="cb_asb50">
+          <div>
+            <div class="cb-label">АСБ со стенозом &gt; 50%</div>
+            <div class="cb-hint">Атеросклеротическое ССЗ по данным обследования (дуплексное сканирование, КТ)</div>
+          </div>
+        </label>
+
+        <label class="cb-item field-ath25">
+          <input type="checkbox" id="cb_ath25">
+          <div>
+            <div class="cb-label">Атеросклероз некоронарных артерий (25–49%)</div>
+            <div class="cb-hint">Гемодинамически незначимый атеросклероз (стеноз 25–49%)</div>
+          </div>
+        </label>
+
+        <label class="cb-item field-gosghs">
+          <input type="checkbox" id="cb_gosghs">
+          <div>
+            <div class="cb-label">Гомозиготная СГХС (гоСГХС)</div>
+            <div class="cb-hint">Экстремальный риск: цель ХС ЛНП &lt; 1,0 ммоль/л</div>
           </div>
         </label>
 
@@ -998,6 +1075,67 @@
     </div>
   </div>
 
+  <!-- ===== СЕРДЕЧНО-СОСУДИСТЫЙ РИСК И ЛИПИДЫ (SCORE2) ===== -->
+  <div class="scale-block" id="block_score2">
+    <div class="scale-block-header">❤️ Сердечно-сосудистый риск и липиды (SCORE2) <span class="info-icon" id="score2HintIcon" style="cursor:help;font-size:16px;opacity:0.6;vertical-align:middle;">ⓘ</span></div>
+    <div class="scale-block-body">
+      <div class="section-label">Липидный профиль</div>
+      <div class="input-grid">
+        <div class="input-group">
+          <label>ХС общий <span class="unit">ммоль/л</span></label>
+          <input type="text" id="tchol" placeholder="5.2">
+        </div>
+        <div class="input-group">
+          <label>ЛПВП <span class="unit">ммоль/л</span></label>
+          <input type="text" id="hdl" placeholder="1.3">
+        </div>
+        <div class="input-group">
+          <label>Триглицериды <span class="unit">ммоль/л</span></label>
+          <input type="text" id="tg" placeholder="1.5">
+        </div>
+        <div class="input-group">
+          <label>ЛПНП (лаборатория) <span class="unit">ммоль/л</span> <span class="info-icon" id="ldlHintIcon" style="cursor:help;font-size:16px;opacity:0.6;vertical-align:middle;">ⓘ</span></label>
+          <input type="text" id="ldl" placeholder="2.8">
+        </div>
+      </div>
+      <div class="section-label">Факторы риска</div>
+      <div class="input-grid">
+        <div class="input-group">
+          <label>Курение</label>
+          <div class="sex-toggle-group">
+            <button type="button" class="sex-btn" data-smoke="no">Не курит</button>
+            <button type="button" class="sex-btn" data-smoke="quit">Бросил</button>
+            <button type="button" class="sex-btn" data-smoke="yes">Курит</button>
+          </div>
+          <input type="hidden" id="smoking" value="no">
+        </div>
+        <div class="input-group field-hba1c">
+          <label>HbA1c <span class="unit">%</span></label>
+          <input type="text" id="hba1c" placeholder="7.2">
+        </div>
+        <div class="input-group field-dm-age">
+          <label>Возраст дебюта СД <span class="unit">лет</span></label>
+          <input type="text" id="dm_age" placeholder="50">
+        </div>
+      </div>
+      <div class="checkbox-grid">
+        <label class="cb-item field-dm-age20">
+          <input type="checkbox" id="dm_age20">
+          <div>
+            <div class="cb-label">Длительность СД ≥ 20 лет</div>
+            <div class="cb-hint">Отметьте вместо ввода возраста дебюта, если удобнее</div>
+          </div>
+        </label>
+        <label class="cb-item">
+          <input type="checkbox" id="score2_2events">
+          <div>
+            <div class="cb-label">2 сердечно-сосудистых события за 2 года на фоне оптимальной гиполипидемической терапии</div>
+          </div>
+        </label>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== РЕЗУЛЬТАТЫ ===== -->
   <div id="results" style="display:none; margin-top:24px;">
 
@@ -1030,7 +1168,7 @@
   <div class="disclaimer-banner">
     <h3>Внимание! Важная информация</h3>
     <p>Данный калькулятор является <strong>вспомогательным инструментом</strong> и предназначен для использования <strong>только квалифицированными медицинскими специалистами</strong>.</p>
-    <p>Расчёты основаны на опубликованных клинических шкалах и номограммах (GRACE, CRUSADE, HAS-BLED, CHA₂DS₂-VASc, PRECISE-DAPT, Caprini, PESI/sPESI, Wells, Revised Geneva, ARC-HBR, CKD-EPI, Кокрофт-Голт). Однако результаты расчётов <strong>не являются диагнозом</strong> и <strong>не заменяют клиническое суждение врача</strong>.</p>
+    <p>Расчёты основаны на опубликованных клинических шкалах и номограммах (GRACE, CRUSADE, HAS-BLED, CHA₂DS₂-VASc, PRECISE-DAPT, Caprini, PESI/sPESI, Wells, Revised Geneva, ARC-HBR, CKD-EPI, Кокрофт-Голт, SCORE2, SCORE2-Diabetes, SCORE2-OP). Однако результаты расчётов <strong>не являются диагнозом</strong> и <strong>не заменяют клиническое суждение врача</strong>.</p>
     <p>Калькулятор <strong>не учитывает</strong> индивидуальные особенности пациента, сопутствующие заболевания, взаимодействие лекарственных средств и другие факторы, которые могут влиять на клиническое решение.</p>
     <p><strong>За клинические решения, принятые на основе данных калькулятора, ответственность несёт лечащий врач.</strong></p>
     <div class="disclaimer-version">По вопросам и предложениям пишите на почту: <a href="mailto:feedback@doc-apps.ru">feedback@doc-apps.ru</a></div>
@@ -1071,14 +1209,14 @@
 </div>
 
 <!-- Контейнер для всплывающих уведомлений (тостов) -->
-<div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
+<div id="toastContainer" style="position: fixed; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
 
 <!-- ===== ДИСКЛЕЙМЕР — МОДАЛЬНОЕ ОКНО ===== -->
 <div id="disclaimerOverlay" class="disclaimer-overlay" style="display:none;">
   <div class="disclaimer-modal">
     <h3>Внимание! Важная информация</h3>
     <p>Данный калькулятор является <strong>вспомогательным инструментом</strong> и предназначен для использования <strong>только квалифицированными медицинскими специалистами</strong>.</p>
-    <p>Расчёты основаны на опубликованных клинических шкалах и номограммах (GRACE, CRUSADE, HAS-BLED, CHA₂DS₂-VASc, PRECISE-DAPT, Caprini, PESI/sPESI, Wells, Revised Geneva, ARC-HBR, CKD-EPI, Кокрофт-Голт). Однако результаты расчётов <strong>не являются диагнозом</strong> и <strong>не заменяют клиническое суждение врача</strong>.</p>
+    <p>Расчёты основаны на опубликованных клинических шкалах и номограммах (GRACE, CRUSADE, HAS-BLED, CHA₂DS₂-VASc, PRECISE-DAPT, Caprini, PESI/sPESI, Wells, Revised Geneva, ARC-HBR, CKD-EPI, Кокрофт-Голт, SCORE2, SCORE2-Diabetes, SCORE2-OP). Однако результаты расчётов <strong>не являются диагнозом</strong> и <strong>не заменяют клиническое суждение врача</strong>.</p>
     <p>Калькулятор <strong>не учитывает</strong> индивидуальные особенности пациента, сопутствующие заболевания, взаимодействие лекарственных средств и другие факторы, которые могут влиять на клиническое решение.</p>
     <p><strong>За клинические решения, принятые на основе данных калькулятора, ответственность несёт лечащий врач.</strong></p>
     <button class="disclaimer-accept-btn" onclick="acceptDisclaimer()">Я понимаю и принимаю</button>
@@ -1099,6 +1237,8 @@
   </div>
 </div>
 <script src="core.js"></script>
+<script src="score2.js"></script>
+<script src="lipids.js"></script>
 <script src="scales.js"></script>
 <script src="analysis.js"></script>
 <script src="help.js"></script>

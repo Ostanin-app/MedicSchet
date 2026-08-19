@@ -17,9 +17,13 @@ const OCR_INDICATORS = [
   { keys: ['глюкоза', 'glucose', 'глюкоза (ммоль/л)'], field: 'glucose', unitExpected: 'ммоль/л' },
   { keys: ['калий', 'k', 'potassium', 'калий (ммоль/л)', 'k+'], field: 'potassium', unitExpected: 'ммоль/л' },
   { keys: ['магний', 'mg', 'magnesium', 'магний (ммоль/л)', 'mg2+'], field: 'magnesium', unitExpected: 'ммоль/л' },
+  { keys: ['кфк-мв', 'кфк мв', 'ck-mb', 'kk-mb', 'кк-мв', 'kk', 'креатинфосфокиназа-мв', 'креатинкиназа-мв'], field: 'ck_mb', unitExpected: 'Ед/л' },
   { keys: ['кфк', 'креатинфосфокиназа', 'креатинкиназа', 'ck', 'ck-nac', 'кфк общая'], field: 'ck_total', unitExpected: 'Ед/л' },
-  { keys: ['кфк-мв', 'кфк мв', 'ck-mb', 'kk-mb', 'кк-мв', 'kk', 'mb'], field: 'ck_mb', unitExpected: 'Ед/л' },
-  { keys: ['лейкоциты', 'wbc', 'leukocytes', 'лейкоциты (×10⁹/л)'], field: 'wbc', unitExpected: '×10⁹/л' }
+  { keys: ['лейкоциты', 'wbc', 'leukocytes', 'лейкоциты (×10⁹/л)'], field: 'wbc', unitExpected: '×10⁹/л' },
+  { keys: ['холестерин-лпвп', 'холестерин лпвп', 'лпвп', 'hdl', 'hdl-c'], field: 'hdl', unitExpected: 'ммоль/л' },
+  { keys: ['холестерин-лпнп', 'холестерин лпнп', 'лпнп', 'ldl', 'ldl-c'], field: 'ldl', unitExpected: 'ммоль/л' },
+  { keys: ['триглицериды', 'триглецириды', 'тг', 'tg', 'triglycerides'], field: 'tg', unitExpected: 'ммоль/л' },
+  { keys: ['общий холестерин', 'холестерин общий', 'холестерин', 'tchol', 'tc'], field: 'tchol', unitExpected: 'ммоль/л' }
 ];
 
 // ===================================================
@@ -28,14 +32,23 @@ const OCR_INDICATORS = [
 function findIndicator(rawName) {
   var words = rawName.toLowerCase().split(/[\s\-]+/).map(function(w) {
     return w.replace(/[^a-zа-я0-9]/g, '');
-  });
+  }).filter(function(w) { return w.length > 0; });
+  // «не-ЛПВП» / «не-ЛПНП» (non-HDL) — производные показатели, не вводим: слово «не» в названии
+  if (words.indexOf('не') >= 0) return null;
   for (var i = 0; i < OCR_INDICATORS.length; i++) {
     var ind = OCR_INDICATORS[i];
     for (var j = 0; j < ind.keys.length; j++) {
-      var cleanKey = ind.keys[j].toLowerCase().replace(/[^a-zа-я0-9]/g, '');
-      if (words.some(function(word) { return word === cleanKey; })) {
-        return ind;
+      // Ключ может быть составным («холестерин-лпвп», «кфк-мв»): матчим по набору слов,
+      // чтобы «Холестерин-ЛПВП» попадал в ЛПВП, а не в общий холестерин
+      var keyWords = ind.keys[j].toLowerCase().split(/[\s\-]+/).map(function(w) {
+        return w.replace(/[^a-zа-я0-9]/g, '');
+      }).filter(function(w) { return w.length > 0; });
+      if (keyWords.length === 0) continue;
+      var allMatch = true;
+      for (var k = 0; k < keyWords.length; k++) {
+        if (words.indexOf(keyWords[k]) < 0) { allMatch = false; break; }
       }
+      if (allMatch) return ind;
     }
   }
   return null;
@@ -80,9 +93,14 @@ function parseEMRText(text) {
     if (isNaN(numValue)) continue;
 
     var unit = '';
-    if (parts.length >= 3) {
-      unit = (parts[2] || '').trim().toLowerCase();
-    } else if (parts.length === 2) {
+    var unit = '';
+    // Единица — первая непустая ячейка после значения (могут быть пустые/▲▼ ячейки)
+    for (var ui = 2; ui < parts.length; ui++) {
+      var u = (parts[ui] || '').trim();
+      if (u && !/^[▲▼\s]*$/.test(u)) { unit = u.toLowerCase(); break; }
+    }
+    // Формат из двух колонок: единица следует за числом в той же ячейке («79.9 мкмоль/л»)
+    if (!unit && parts.length === 2) {
       var afterNum = valueCell.replace(numMatch[0], '').trim();
       if (afterNum) unit = afterNum.toLowerCase();
     }
@@ -95,6 +113,11 @@ function parseEMRText(text) {
     if (indicator.field === 'creatinine' && (unit.includes('мг/дл') || unit.includes('mg/dl'))) finalValue = numValue * 88.4;
     if (indicator.field === 'hct' && numValue < 1) finalValue = numValue * 100;
     if (indicator.field === 'sbp' && valueCell.includes('/')) finalValue = parseFloat(valueCell.split('/')[0].replace(/▲/g, '').trim());
+    // Липиды в мг/дл → ммоль/л: холестерин × 0,0259; триглицериды × 0,0113
+    if ((indicator.field === 'tchol' || indicator.field === 'hdl' || indicator.field === 'ldl') &&
+        (unit.includes('мг/дл') || unit.includes('mg/dl'))) finalValue = numValue * 0.0259;
+    if (indicator.field === 'tg' &&
+        (unit.includes('мг/дл') || unit.includes('mg/dl'))) finalValue = numValue * 0.0113;
 
     results.push({
       fieldId: indicator.field,
@@ -114,14 +137,24 @@ function parseEMRText(text) {
       for (var jj = 0; jj < ind2.keys.length; jj++) {
         var key = ind2.keys[jj];
         var escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        var regex = new RegExp(escapedKey + '\\s*[^\\d]*?(\\d+[.,]\\d+|\\d+)', 'i');
-        var m = cleanText.match(regex);
-        if (m) {
+        var regex = new RegExp(escapedKey + '\\s*[^\\d]*?(\\d+[.,]\\d+|\\d+)', 'gi');
+        var m;
+        while ((m = regex.exec(cleanText)) !== null) {
+          // «не-ЛПВП» / «не-ЛПНП» (non-HDL) — пропускаем и продолжаем поиск дальше
+          var beforeKey = cleanText.substring(0, m.index);
+          if (/не\s*-?\s*$/i.test(beforeKey)) continue;
+          // Ключ, за которым сразу идёт «/» — это единица измерения («mg/dl», «г/дл»), а не показатель
+          if (cleanText.charAt(m.index + key.length) === '/') continue;
           var valStr = m[1].replace(',', '.');
           var numVal = parseFloat(valStr);
           if (!isNaN(numVal)) {
             if (ind2.field === 'hb' && /г\/дл|g\/dl/i.test(cleanText.substring(m.index))) numVal *= 10;
             if (ind2.field === 'creatinine' && /мг\/дл|mg\/dl/i.test(cleanText.substring(m.index))) numVal *= 88.4;
+            // Липиды в мг/дл → ммоль/л: холестерин × 0,0259; триглицериды × 0,0113
+            if ((ind2.field === 'tchol' || ind2.field === 'hdl' || ind2.field === 'ldl') &&
+                /мг\/дл|mg\/dl/i.test(cleanText.substring(m.index))) numVal *= 0.0259;
+            if (ind2.field === 'tg' &&
+                /мг\/дл|mg\/dl/i.test(cleanText.substring(m.index))) numVal *= 0.0113;
             results.push({
               fieldId: ind2.field,
               value: numVal,
@@ -130,6 +163,9 @@ function parseEMRText(text) {
               rawName: key,
               extra: null
             });
+            // Вырезаем распознанный фрагмент, чтобы общий ключ («холестерин») не
+            // перехватил уже распознанный «Холестерин-ЛПВП»/«Холестерин-ЛПНП»
+            cleanText = cleanText.slice(0, m.index) + cleanText.slice(m.index + m[0].length);
             break;
           }
         }
@@ -857,8 +893,20 @@ document.addEventListener('DOMContentLoaded', function() {
   // --- Инициализация темы ---
   initTheme();
 
+  // --- Инициализация режима: Стационар / Поликлиника ---
+  initModeSwitch();
+
   // --- Инициализация переключателя пола ---
   initSexToggle();
+  initSmokingToggle();
+
+  // --- Тултипы (ⓘ) режима и модуля «СС-риск и липиды» ---
+  setupTooltipTrigger(document.getElementById('outpatientHintIcon'),
+    'Режим «Поликлиника»: здесь доступны шкалы для планового приёма. Стационарные шкалы (GRACE, CRUSADE, ARC-HBR, Caprini, PRECISE-DAPT, PESI, Wells, Geneva) в этом режиме скрыты и не участвуют в расчётах.');
+  setupTooltipTrigger(document.getElementById('score2HintIcon'),
+    'Модуль сам выберет нужный вариант SCORE2 по возрасту и диабету и рассчитает ЛПНП по формулам. Если риск и так очевидно очень высокий (инфаркт, инсульт и т.п.) — SCORE2 показываться не будет.');
+  setupTooltipTrigger(document.getElementById('ldlHintIcon'),
+    'По желанию — сравним лабораторный ЛПНП с расчётом по формулам.');
 
   // --- Инициализация дисклеймера ---
   checkDisclaimer();
@@ -896,6 +944,12 @@ document.addEventListener('DOMContentLoaded', function() {
   document.addEventListener('change', function(e) {
     var grp = e.target && e.target.closest ? e.target.closest('.input-group') : null;
     if (grp) grp.classList.remove('field-error');
+  });
+
+  // --- Модуль SCORE2: видимость HbA1c/дебюта СД при изменении диабета ---
+  ['cb_dm', 'dm_age20'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('change', updateFieldVisibility);
   });
   document.addEventListener('click', function(e) {
     var grp = e.target && e.target.closest ? e.target.closest('.input-group') : null;
@@ -1037,6 +1091,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // --- Восстановление сохранённых данных (поля, галочки, списки, шкалы) ---
   restoreAppState();
+  applyMode();
   syncCustomSelects();
   updateFieldVisibility();
   updateGroupButtonsUI();
