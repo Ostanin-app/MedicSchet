@@ -372,8 +372,8 @@ window.handleAiParse = function() {
     if (window.saveAppState) saveAppState();
   })
   .catch(function(err) {
-    showAiMsg('err', 'Не удалось связаться с прокси: ' + err.message +
-      '\nЗапустите прокси: node server.js (папка MedicSchet-proxy).');
+    showAiMsg('err', 'Не удалось связаться с ИИ-сервисом: ' + err.message +
+      '\nПроверьте подключение к интернету или повторите позже.');
   })
   .then(function() {
     if (btn) { btn.disabled = false; btn.innerHTML = '<span class="ai-ico">🤖</span><span id="aiBtnLabel">Разобрать ИИ</span>'; }
