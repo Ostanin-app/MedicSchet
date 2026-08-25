@@ -187,6 +187,7 @@ body.dark-theme .mode-btn.active {
   border-radius: 9px;
   backdrop-filter: blur(4px);
   transition: background .18s, transform .12s;
+  line-height: 1.2;
 }
 #themeToggle { font-size: 19px; padding: 6px 11px; }
 #themeToggle:hover, #helpOpenBtn:hover, #demoToggle:hover {
@@ -692,6 +693,10 @@ select option {
   flex: 1;
 }
 .result-value { font-size: 23px; font-weight: 700; margin-bottom: 3px; line-height: 1.25; font-family: var(--mono); letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+/* Кокрофт-Голт: три метода (TBW/IBW/ABW) — «рабочий» выделен жирным и цветом риска карточки */
+.result-value .cg-working { font-weight: 800; }
+.result-value .cg-plain { color: var(--muted); font-weight: 500; }
+.result-value .cg-plain + .cg-plain::before, .result-value .cg-plain + .cg-working::before, .result-value .cg-working + .cg-plain::before, .result-value .cg-working + .cg-working::before { content: " · "; color: var(--border-strong); }
 .result-interp { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
 .result-details { font-size: 12px; color: var(--text-2); line-height: 1.55; }
 .result-hint {
@@ -1899,6 +1904,29 @@ button.floating-calc.has-warnings {
 .btn-ai:active { transform: translateY(1px); }
 .btn-ai:disabled { background: var(--border-strong); box-shadow: none; cursor: not-allowed; opacity: .85; }
 .btn-ai .ai-ico { font-size: 15px; line-height: 1; }
+
+/* Пульсирующая точка состояния ИИ */
+.ai-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.55);
+  display: inline-block;
+  flex-shrink: 0;
+  transition: background .3s;
+}
+.ai-dot.loading {
+  background: #4ade80;
+  animation: aiPulse 1.2s ease-in-out infinite;
+}
+.ai-dot.done  { background: #4ade80; }
+.ai-dot.error { background: #f87171; }
+@keyframes aiPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74,222,128,.5); }
+  50%      { box-shadow: 0 0 0 6px rgba(74,222,128,0); }
+}
+/* тёмная тема: точка на тёмном фоне кнопки чуть ярче */
+body.dark-theme .ai-dot { background: rgba(215,215,221,.5); }
+body.dark-theme .ai-dot.loading { background: #4ade80; }
 
 /* спиннер загрузки */
 .btn-ai .spinner {
